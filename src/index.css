@@ -1,0 +1,303 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 40% 2%;
+    --foreground: 120 100% 60%;
+
+    --card: 210 40% 3%;
+    --card-foreground: 120 100% 60%;
+
+    --popover: 210 40% 3%;
+    --popover-foreground: 120 100% 60%;
+
+    --primary: 120 100% 50%;
+    --primary-foreground: 210 40% 2%;
+
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 210 40% 2%;
+
+    --muted: 210 40% 5%;
+    --muted-foreground: 120 30% 70%;
+
+    --accent: 180 100% 50%;
+    --accent-foreground: 210 40% 2%;
+
+    --destructive: 300 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 120 100% 25%;
+    --input: 120 100% 25%;
+    --ring: 120 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Matrix colors */
+    --matrix-green: #00FF41;
+    --matrix-cyan: #00FFFF;
+    --matrix-magenta: #FF00FF;
+    --matrix-bg: #111111;
+    --matrix-dark: #0a0a0a;
+  }
+
+  .dark {
+    --background: 210 40% 2%;
+    --foreground: 120 100% 60%;
+    --card: 210 40% 3%;
+    --card-foreground: 120 100% 60%;
+    --popover: 210 40% 3%;
+    --popover-foreground: 120 100% 60%;
+    --primary: 120 100% 50%;
+    --primary-foreground: 210 40% 2%;
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 210 40% 2%;
+    --muted: 210 40% 5%;
+    --muted-foreground: 120 30% 70%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 210 40% 2%;
+    --destructive: 300 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 120 100% 25%;
+    --input: 120 100% 25%;
+    --ring: 120 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-[#111111] text-[#00FF41];
+    font-family: 'Fira Code', monospace;
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(0, 255, 65, 0.1) 1px, transparent 0);
+    background-size: 20px 20px;
+    min-height: 100vh;
+  }
+
+  /* Cyberpunk glow effects */
+  .glow-text {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .glow-green {
+    box-shadow: 0 0 10px #00FF41;
+  }
+
+  .glow-cyan {
+    box-shadow: 0 0 10px #00FFFF;
+  }
+
+  .glow-magenta {
+    box-shadow: 0 0 10px #FF00FF;
+  }
+
+  /* Matrix rain effect background */
+  .matrix-bg::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      linear-gradient(90deg, transparent 98%, rgba(0, 255, 65, 0.1) 100%),
+      linear-gradient(0deg, transparent 98%, rgba(0, 255, 65, 0.1) 100%);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Terminal cursor animation */
+  .terminal-cursor::after {
+    content: '|';
+    color: #00FFFF;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+
+  /* Digital rain effect */
+  @keyframes digital-rain {
+    0% {
+      transform: translateY(-100vh);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+
+  .digital-rain {
+    animation: digital-rain 3s linear infinite;
+  }
+
+  /* Neon button effects */
+  .neon-button {
+    background: transparent;
+    border: 2px solid #00FFFF;
+    color: #00FFFF;
+    transition: all 0.3s ease;
+  }
+
+  .neon-button:hover {
+    background: rgba(0, 255, 255, 0.1);
+    box-shadow: 
+      0 0 20px #00FFFF,
+      inset 0 0 20px rgba(0, 255, 255, 0.1);
+    transform: scale(1.05);
+  }
+
+  /* Custom input styling */
+  .matrix-input {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00FFFF;
+    color: #00FF41;
+    font-family: 'Fira Code', monospace;
+  }
+
+  .matrix-input:focus {
+    outline: none;
+    box-shadow: 0 0 20px #00FFFF;
+    border-color: #00FF41;
+  }
+
+  .matrix-input::placeholder {
+    color: rgba(0, 255, 65, 0.5);
+  }
+}
+
+@layer utilities {
+  .prose {
+    @apply max-w-none text-[#00FF41];
+  }
+  
+  .prose pre {
+    @apply bg-[#0a0a0a] rounded-lg p-4 overflow-x-auto border border-[#00FF41]/30;
+  }
+  
+  .prose code {
+    @apply bg-[#0a0a0a] px-1 py-0.5 rounded text-sm text-[#00FFFF];
+  }
+  
+  .prose h1, .prose h2, .prose h3 {
+    @apply text-[#00FFFF] glow-text;
+  }
+  
+  .prose p {
+    @apply mb-3 text-[#00FF41];
+  }
+  
+  .prose ul, .prose ol {
+    @apply list-disc pl-5 mb-3 text-[#00FF41];
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-[#FF00FF] pl-4 italic mb-3 text-[#FF00FF];
+  }
+  
+  .prose a {
+    @apply text-[#00FFFF] hover:underline glow-text;
+  }
+  
+  .prose strong {
+    @apply font-semibold text-[#00FFFF];
+  }
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00FF41;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00FFFF;
+}
+
+/* Loading animation */
+@keyframes matrix-loading {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.0);
+    opacity: 1;
+  }
+}
+
+.animate-matrix-loading {
+  animation: matrix-loading 1.4s infinite ease-in-out both;
+}
+
+/* Selection styles */
+::selection {
+  background: rgba(0, 255, 255, 0.3);
+  color: #00FF41;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #00FFFF;
+  outline-offset: 2px;
+  box-shadow: 0 0 10px #00FFFF;
+}
+
+/* Glitch effect for errors */
+@keyframes glitch {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10% {
+    transform: translateX(-2px);
+  }
+  20% {
+    transform: translateX(2px);
+  }
+  30% {
+    transform: translateX(-2px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  50% {
+    transform: translateX(-2px);
+  }
+  60% {
+    transform: translateX(2px);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+  90% {
+    transform: translateX(-2px);
+  }
+}
+
+.glitch-effect {
+  animation: glitch 0.5s ease-in-out;
+}
