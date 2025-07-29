@@ -1,3 +1,10 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # Python
 __pycache__/
 *.py[cod]
@@ -46,57 +53,30 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
 # Build outputs
 dist/
 build/
 *.tsbuildinfo
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
 # Logs
-logs/
+logs
 *.log
-
-# Temporary files
-temp/
-tmp/
-*.tmp
-*.temp
-
-# Vector database files
-vector_db/
-*.bin
-
-# Cache
-.cache/
-.parcel-cache/
-
-# Coverage reports
-coverage/
-*.lcov
 
 # Runtime data
 pids
 *.pid
 *.seed
 *.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
 
 # Optional npm cache directory
 .npm
@@ -120,6 +100,7 @@ pids
 .yarn-integrity
 
 # parcel-bundler cache (https://parceljs.org/)
+.cache
 .parcel-cache
 
 # Next.js build output
@@ -127,7 +108,6 @@ pids
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -139,4 +119,33 @@ public
 
 # Temporary folders
 tmp/
-temp/ 
+temp/
+
+# Local environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Bun
+bun.lockb
+
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis

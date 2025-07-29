@@ -9,8 +9,9 @@ from typing import List
 from models.schemas import *
 from core.config import settings
 from core.ai_service import ai_service
-from core.state_manager import get_state, update_state
+from core.state_manager import get_state, update_state, reset_state
 from core.cloning_service import clone_and_process_repo
+from core.rag_service import query_codebase
 
 # Load environment variables
 load_dotenv()
@@ -69,6 +70,24 @@ async def get_status():
     current_state = await get_state()
     return StatusResponse(**current_state)
 
+@app.post("/debug/reset")
+async def reset_application_state():
+    """Reset the application state (for debugging)"""
+    await reset_state()
+    return {"message": "State reset successfully"}
+
+@app.get("/debug/state")
+async def debug_state():
+    """Get detailed state information for debugging"""
+    import os
+    state = await get_state()
+    return {
+        "state": state,
+        "has_repo": bool(state.get("repo_name")),
+        "repo_path_exists": os.path.exists(state.get("repo_path", "")) if state.get("repo_path") else False,
+        "vector_db_exists": os.path.exists(f"vector_db/{state.get('repo_name', '')}") if state.get("repo_name") else False
+    }
+
 @app.get("/repo_info", response_model=RepoInfoResponse)
 async def get_repo_info():
     """Get current repository information"""
@@ -81,33 +100,21 @@ async def get_repo_info():
         repo_description=current_state["repo_description"] or "No description available"
     )
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Chat with AI about the codebase"""
+@app.post("/chat", response_model=ChatResponse, tags=["AI"])
+async def chat_with_repo(request: ChatRequest):
+    """
+    Handles chat queries against the indexed repository using a RAG pipeline.
+    """
     try:
         if not settings.has_any_ai_key:
             raise HTTPException(status_code=500, detail="No AI API keys configured")
         
-        # For now, generate a simple response
-        # In the full implementation, this would:
-        # 1. Search the codebase for relevant code
-        # 2. Use RAG to find context
-        # 3. Generate AI response
-        
-        response = await ai_service.generate_chat_response(
-            question=request.question,
-            model=settings.DEFAULT_MODEL
-        )
-        
-        # Mock retrieved code snippets
-        retrieved_code = [
-            "def example_function():\n    return 'Hello from CodeMatrix!'",
-            "class ExampleClass:\n    def __init__(self):\n        self.name = 'CodeMatrix'"
-        ]
+        # Use the RAG service to query the codebase
+        response = await query_codebase(request.question, request.top_k)
         
         return ChatResponse(
-            answer=response,
-            retrieved_code=retrieved_code
+            answer=response["answer"],
+            retrieved_code=response["retrieved_code"]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

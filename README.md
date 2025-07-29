@@ -1,73 +1,163 @@
-# Welcome to your Lovable project
+# RAG3.0 - Advanced Code Analysis and Repository Intelligence
 
-## Project info
+A comprehensive RAG (Retrieval-Augmented Generation) system for intelligent code analysis, repository understanding, and AI-powered development assistance.
 
-**URL**: https://lovable.dev/projects/9f1b6399-5680-4031-b50f-3abe8506bb09
+## 🚀 Features
 
-## How can I edit this code?
+- **Intelligent Code Analysis**: Deep understanding of codebases using advanced RAG techniques
+- **Repository Cloning & Processing**: Automated repository analysis and vectorization
+- **AI-Powered Chat Interface**: Interactive code exploration and explanation
+- **Security Scanning**: Automated security vulnerability detection
+- **Live Code Preview**: Real-time code execution and visualization
+- **Multi-Repository Support**: Handle multiple repositories simultaneously
 
-There are several ways of editing your application.
+## 🏗️ Architecture
 
-**Use Lovable**
+The project consists of two main components:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9f1b6399-5680-4031-b50f-3abe8506bb09) and start prompting.
+### Backend (`codematrix_backend/`)
+- **FastAPI** server for API endpoints
+- **RAG Service**: Advanced retrieval and generation capabilities
+- **AI Service**: Integration with AI models for code analysis
+- **Cloning Service**: Repository management and processing
+- **Vector Database**: ChromaDB for efficient similarity search
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend (`codematrix_frontend/`)
+- **React + TypeScript** application
+- **Modern UI** with shadcn/ui components
+- **Real-time Chat Interface** for code exploration
+- **Code Visualization** and live preview capabilities
 
-**Use your preferred IDE**
+## 📋 Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Python 3.8+
+- Node.js 16+
+- Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Installation
 
-Follow these steps:
+### Backend Setup
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Navigate to the backend directory:
+```bash
+cd codematrix_backend
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+5. Run the backend server:
+```bash
+python main.py
+```
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
+```bash
+cd codematrix_frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Usage
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. **Start both backend and frontend servers**
+2. **Open the frontend application** in your browser
+3. **Enter a repository URL** to analyze
+4. **Use the chat interface** to ask questions about the code
+5. **Explore code insights** and security findings
 
-**Use GitHub Codespaces**
+## 🔧 Configuration
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Environment Variables
 
-## What technologies are used for this project?
+Create a `.env` file in the backend directory:
 
-This project is built with:
+```env
+# AI Model Configuration
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Database Configuration
+CHROMA_DB_PATH=./vector_db
 
-## How can I deploy this project?
+# Server Configuration
+HOST=0.0.0.0
+PORT=8000
+```
 
-Simply open [Lovable](https://lovable.dev/projects/9f1b6399-5680-4031-b50f-3abe8506bb09) and click on Share -> Publish.
+## 📁 Project Structure
 
-## Can I connect a custom domain to my Lovable project?
+```
+RAG3.0/
+├── codematrix_backend/
+│   ├── api/                 # API endpoints
+│   ├── core/               # Core services
+│   │   ├── ai_service.py   # AI model integration
+│   │   ├── rag_service.py  # RAG implementation
+│   │   ├── cloning_service.py # Repository management
+│   │   └── config.py       # Configuration management
+│   ├── models/             # Data models and schemas
+│   ├── repositories/       # Repository data
+│   ├── vector_db/          # Vector database storage
+│   └── main.py            # FastAPI application
+├── codematrix_frontend/
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API services
+│   │   └── types/          # TypeScript types
+│   └── package.json
+└── README.md
+```
 
-Yes, you can!
+## 🤝 Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+If you encounter any issues or have questions, please:
+
+1. Check the [Issues](https://github.com/yourusername/RAG3.0/issues) page
+2. Create a new issue with detailed information
+3. Include error messages and steps to reproduce
+
+## 🔮 Roadmap
+
+- [ ] Enhanced security scanning capabilities
+- [ ] Support for more programming languages
+- [ ] Integration with CI/CD pipelines
+- [ ] Advanced code visualization features
+- [ ] Multi-user collaboration features 

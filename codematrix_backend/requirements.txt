@@ -4,4 +4,11 @@ python-dotenv
 groq
 google-generativeai
 GitPython
-aiofiles 
+aiofiles
+langchain
+langchain-google-genai
+langchain-groq
+langchain-community
+chromadb
+tree-sitter
+tree-sitter-languages 

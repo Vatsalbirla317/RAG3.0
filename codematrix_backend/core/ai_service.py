@@ -3,12 +3,16 @@ import asyncio
 from typing import List, Optional
 import groq
 import google.generativeai as genai
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_groq import ChatGroq
 from .config import settings
 
 class AIService:
     def __init__(self):
         self.groq_client = None
         self.gemini_model = None
+        self.gemini_embeddings = None
+        self.groq_chat = None
         self._initialize_clients()
     
     def _initialize_clients(self):
@@ -21,6 +25,20 @@ class AIService:
         if settings.has_gemini_keys:
             genai.configure(api_key=settings.GEMINI_API_KEY_1 or settings.GEMINI_API_KEY_2)
             self.gemini_model = genai.GenerativeModel('gemini-pro')
+        
+        # Initialize Gemini Embeddings
+        if settings.has_gemini_keys:
+            self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
+                model="models/text-embedding-004",
+                google_api_key=settings.google_api_key
+            )
+        
+        # Initialize Groq Chat for LangChain
+        if settings.has_groq_key:
+            self.groq_chat = ChatGroq(
+                api_key=settings.GROQ_API_KEY,
+                model="llama3-8b-8192"
+            )
     
     async def chat_completion(
         self, 
@@ -138,4 +156,18 @@ class AIService:
         return await self.chat_completion(messages, model)
 
 # Global AI service instance
-ai_service = AIService() 
+ai_service = AIService()
+
+# Initialize the Gemini Embedding Model (for direct access)
+gemini_embeddings = GoogleGenerativeAIEmbeddings(
+    model="models/text-embedding-004",
+    google_api_key=settings.google_api_key
+) if settings.has_gemini_keys else None
+
+# Initialize the Groq Chat Model (for later use)
+groq_chat = ChatGroq(
+    api_key=settings.GROQ_API_KEY,
+    model="llama3-8b-8192"
+) if settings.has_groq_key else None
+
+print("AI services initialized.") 

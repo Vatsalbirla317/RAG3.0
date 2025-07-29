@@ -1,0 +1,10 @@
+[tool.uvicorn]
+reload_dirs = ["."]
+reload_excludes = [
+    ".*",
+    "*.pyc",
+    "__pycache__",
+    "repositories",
+    "vector_db",
+    "static"
+] 

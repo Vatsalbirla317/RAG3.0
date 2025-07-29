@@ -47,6 +47,11 @@ class Settings:
         return bool(self.GEMINI_API_KEY_1 or self.GEMINI_API_KEY_2)
     
     @property
+    def google_api_key(self) -> str:
+        """Get the first available Google API key for embeddings"""
+        return self.GEMINI_API_KEY_1 or self.GEMINI_API_KEY_2
+    
+    @property
     def has_any_ai_key(self) -> bool:
         return self.has_groq_key or self.has_gemini_keys
 
