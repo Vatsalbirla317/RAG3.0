@@ -88,6 +88,9 @@ tmp/
 vector_db/
 *.bin
 
+# Cloned repositories (runtime data)
+codematrix_backend/repositories/
+
 # Cache
 .cache/
 .parcel-cache/

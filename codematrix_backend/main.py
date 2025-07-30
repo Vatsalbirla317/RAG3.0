@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 from typing import List
+from contextlib import asynccontextmanager
 
 # Import our modules
 from models.schemas import *
@@ -44,11 +45,19 @@ def rehydrate_state_on_startup():
         else:
             print("Found zero or multiple indexed repos. Starting with a clean idle state.")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    rehydrate_state_on_startup()
+    yield
+    # Shutdown
+    print("Application shutting down...")
+
 app = FastAPI(
     title="CodeMatrix Backend", 
     version="1.0.0",
     description="AI-powered code analysis and chat platform",
-    on_startup=[rehydrate_state_on_startup]  # <-- RUN THE FUNCTION ON STARTUP
+    lifespan=lifespan
 )
 
 # Add CORS middleware

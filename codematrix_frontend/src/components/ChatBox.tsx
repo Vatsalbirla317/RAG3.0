@@ -155,17 +155,6 @@ export const ChatBox = ({ repository, onSnippetAction }: ChatBoxProps) => {
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
-                    {message.codeSnippets && message.codeSnippets.length > 0 && (
-                      <div className="mt-4 space-y-2">
-                        {message.codeSnippets.map((snippet) => (
-                          <CodeViewer
-                            key={snippet.id}
-                            snippet={snippet}
-                            onAction={onSnippetAction}
-                          />
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </motion.div>
               ))

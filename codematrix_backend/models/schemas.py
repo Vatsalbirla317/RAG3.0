@@ -84,9 +84,9 @@ class CloneResponse(BaseModel):
     repo_path: str
 
 class StatusResponse(BaseModel):
-    status: RepositoryStatus
+    status: str
     message: str
-    progress: int  # 0-100
+    progress: float  # 0.0-1.0
 
 class ChatResponse(BaseModel):
     answer: str
