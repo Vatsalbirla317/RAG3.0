@@ -31,7 +31,7 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
       setStatus(statusResponse);
       
       if (statusResponse.status === 'ready') {
-        setIsCloning(false);
+        // Don't set isCloning to false - let parent component handle unmounting
         if (currentRepo) {
           const updatedRepo = { ...currentRepo, status: 'ready' as const };
           setCurrentRepo(updatedRepo);
@@ -46,6 +46,7 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
           },
         });
       } else if (statusResponse.status === 'error') {
+        // Only set isCloning to false on error so user can retry
         setIsCloning(false);
         toast.error('Matrix connection failed', {
           style: {
@@ -74,6 +75,11 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
   }, [isCloning]);
 
   const handleClone = async () => {
+    // Prevent multiple clicks
+    if (isCloning) {
+      return;
+    }
+
     if (!isValidGitHubUrl(repoUrl)) {
       toast.error('Please enter a valid GitHub repository URL', {
         style: {
