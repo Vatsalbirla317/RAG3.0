@@ -11,5 +11,4 @@ langchain-groq
 langchain-community
 chromadb
 tree-sitter
-tree-sitter-languages
 gunicorn 
