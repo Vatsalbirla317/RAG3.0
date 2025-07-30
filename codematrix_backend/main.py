@@ -10,17 +10,45 @@ from typing import List
 from models.schemas import *
 from core.config import settings
 from core.ai_service import ai_service
-from core.state_manager import get_state, update_state, reset_state
+from core.state_manager import get_state, update_state, reset_state, app_state
 from core.cloning_service import clone_and_process_repo
 from core.rag_service import query_codebase
 
 # Load environment variables
 load_dotenv()
 
+# --- Startup Logic ---
+def rehydrate_state_on_startup():
+    """
+    Checks the filesystem to see if a repo was already indexed and
+    restores the in-memory state to avoid amnesia after spin-down.
+    """
+    print("Application starting up, attempting to re-hydrate state...")
+    vector_db_dir = "vector_db"
+    if os.path.exists(vector_db_dir):
+        indexed_repos = [d for d in os.listdir(vector_db_dir) if os.path.isdir(os.path.join(vector_db_dir, d))]
+        # If there's exactly one repo indexed, assume it's the active one.
+        if len(indexed_repos) == 1:
+            repo_name = indexed_repos[0]
+            repo_path = os.path.join("repositories", repo_name)
+            print(f"Found existing indexed repository: {repo_name}. Restoring state.")
+            # Use the initial app_state dictionary directly since this is pre-async loop
+            app_state.update({
+                "status": "ready",
+                "message": "Repository is ready.",
+                "progress": 1.0,
+                "repo_path": repo_path,
+                "repo_name": repo_name,
+                "is_processing": False
+            })
+        else:
+            print("Found zero or multiple indexed repos. Starting with a clean idle state.")
+
 app = FastAPI(
     title="CodeMatrix Backend", 
     version="1.0.0",
-    description="AI-powered code analysis and chat platform"
+    description="AI-powered code analysis and chat platform",
+    on_startup=[rehydrate_state_on_startup]  # <-- RUN THE FUNCTION ON STARTUP
 )
 
 # Add CORS middleware
