@@ -21,6 +21,10 @@ wheels/
 *.egg
 MANIFEST
 
+# Python lib directories (but not frontend lib)
+**/lib/
+!**/src/lib/
+
 # Virtual environments
 .env
 .venv
