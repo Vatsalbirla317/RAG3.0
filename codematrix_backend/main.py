@@ -56,6 +56,10 @@ async def clone_repository(request: CloneRequest, background_tasks: BackgroundTa
     """
     Clones a public GitHub repository and starts the indexing process in the background.
     """
+    current_state = await get_state()
+    if current_state.get("is_processing"):
+        raise HTTPException(status_code=429, detail="A repository is already being processed. Please wait.")
+
     # Start the background task
     background_tasks.add_task(clone_and_process_repo, str(request.repo_url))
 

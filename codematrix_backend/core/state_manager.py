@@ -11,6 +11,7 @@ app_state = {
     "repo_path": None,
     "repo_name": None,
     "repo_description": "No repository loaded.",
+    "is_processing": False,  # <-- ADD THIS LINE
     "last_updated": None
 }
 
@@ -23,7 +24,7 @@ def _get_repo_name_from_path(repo_path: Optional[str]) -> Optional[str]:
         return os.path.basename(repo_path)
     return None
 
-async def update_state(status=None, message=None, progress=None, repo_path=None, repo_name=None):
+async def update_state(status=None, message=None, progress=None, repo_path=None, repo_name=None, is_processing=None):
     async with state_lock:
         if status is not None:
             app_state["status"] = status
@@ -38,6 +39,8 @@ async def update_state(status=None, message=None, progress=None, repo_path=None,
                 repo_name = _get_repo_name_from_path(repo_path)
         if repo_name is not None:
             app_state["repo_name"] = repo_name
+        if is_processing is not None:
+            app_state["is_processing"] = is_processing
         
         # Update timestamp
         import datetime
@@ -59,6 +62,7 @@ async def reset_state():
             "repo_path": None,
             "repo_name": None,
             "repo_description": "No repository loaded.",
+            "is_processing": False,
             "last_updated": None
         })
         print("State reset to initial values") 

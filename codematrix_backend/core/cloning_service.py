@@ -18,6 +18,9 @@ VECTOR_DB_DIR = "vector_db"
 
 async def clone_and_process_repo(repo_url: str):
     try:
+        # SET THE LOCK
+        await update_state(is_processing=True)
+        
         repo_name = os.path.basename(urlparse(repo_url).path).replace('.git', '')
         repo_path = os.path.join(REPO_DIR, repo_name)
         vector_db_path = os.path.join(VECTOR_DB_DIR, repo_name)
@@ -91,4 +94,7 @@ async def clone_and_process_repo(repo_url: str):
 
     except Exception as e:
         print(f"Error during repository processing: {e}")
-        await update_state(status="error", message=str(e), progress=0.0) 
+        await update_state(status="error", message=str(e), progress=0.0)
+    finally:
+        # ALWAYS RELEASE THE LOCK
+        await update_state(is_processing=False) 
