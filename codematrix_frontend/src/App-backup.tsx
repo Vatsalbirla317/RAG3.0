@@ -1,26 +1,40 @@
-import { useState, useEffect } from 'react';
-import { Terminal } from 'lucide-react';
+// Backup of original App
+import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'react-hot-toast';
+import { useTheme } from './hooks/useTheme';
+import { Header } from './components/Header';
+import { RepositoryInput } from './components/RepositoryInput';
+import { ChatBox } from './components/ChatBox';
+import { ExplainModal } from './components/ExplainModal';
+import { LivePreview } from './components/LivePreview';
+import { SecurityScanner } from './components/SecurityScanner';
+import { VisualizationPanel } from './components/VisualizationPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Terminal, Zap } from 'lucide-react';
+import { Repository, CodeSnippet } from './types';
+
+const queryClient = new QueryClient();
 
 function App() {
-  const [isClient, setIsClient] = useState(false);
-  
-  // Ensure hydration safety
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
-  // Don't render anything complex until client-side
-  if (!isClient) {
-    return (
-      <div className="min-h-screen bg-black text-green-400 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">⚡</div>
-          <h1 className="text-4xl font-bold mb-2">CodeMatrix</h1>
-          <p>Initializing...</p>
-        </div>
-      </div>
-    );
-  }
+  const { theme, toggleTheme } = useTheme();
+  const [repository, setRepository] = useState<Repository | null>(null);
+  const [selectedSnippet, setSelectedSnippet] = useState<CodeSnippet | null>(null);
+  const [activeModal, setActiveModal] = useState<'explain' | 'preview' | 'security' | 'visualize' | null>(null);
+
+  const handleRepositoryCloned = (repo: Repository) => {
+    setRepository(repo);
+  };
+
+  const handleSnippetAction = (snippet: CodeSnippet, action: 'explain' | 'preview' | 'security' | 'visualize') => {
+    setSelectedSnippet(snippet);
+    setActiveModal(action);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+    setSelectedSnippet(null);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
