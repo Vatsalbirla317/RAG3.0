@@ -11,6 +11,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://rag3-backend.onrender.com"
+    "VITE_API_URL": "https://rag3-0.onrender.com"
   }
 }
