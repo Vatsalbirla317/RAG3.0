@@ -26,16 +26,10 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://localhost:5173",  # Vite default port
-        "https://codematrix-frontend.vercel.app",  # Add your Vercel frontend URL here
-        "https://rag3-0-frontend.vercel.app",  # Alternative Vercel URL pattern
-    ],
+    allow_origins=["*"],  # Temporarily allow all origins for debugging
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 @app.get("/", include_in_schema=False)
