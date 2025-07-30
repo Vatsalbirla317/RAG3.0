@@ -2,10 +2,17 @@
 import { useState, useEffect } from 'react';
 
 export function useTheme() {
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isClient, setIsClient] = useState(false);
+
+  // Hydration-safe initialization
+  useEffect(() => {
+    setIsClient(true);
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
-    return savedTheme || 'dark';
-  });
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
