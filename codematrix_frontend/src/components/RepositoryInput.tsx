@@ -32,11 +32,21 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
       
       if (statusResponse.status === 'ready') {
         // Don't set isCloning to false - let parent component handle unmounting
+        const repo: Repository = {
+          name: currentRepo?.name || repoUrl.split('/').pop() || 'Unknown',
+          url: currentRepo?.url || repoUrl,
+          path: currentRepo?.path || '',
+          status: 'ready' as const
+        };
+        
         if (currentRepo) {
           const updatedRepo = { ...currentRepo, status: 'ready' as const };
           setCurrentRepo(updatedRepo);
-          onRepositoryCloned(updatedRepo);
         }
+        
+        // Always call the callback when ready
+        onRepositoryCloned(repo);
+        
         toast.success('Matrix connection established!', {
           style: {
             background: '#0a0a0a',
