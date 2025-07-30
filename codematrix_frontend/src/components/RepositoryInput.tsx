@@ -55,9 +55,13 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
             boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
           },
         });
+      } else if (statusResponse.status === 'idle') {
+        // If we get idle status while cloning, something went wrong
+        setIsCloning(false);
       }
     } catch (error) {
       console.error('Error polling status:', error);
+      setIsCloning(false); // Stop polling on error
     }
   };
 
@@ -67,7 +71,7 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
       interval = setInterval(pollStatus, 1000);
     }
     return () => clearInterval(interval);
-  }, [isCloning, currentRepo]);
+  }, [isCloning]);
 
   const handleClone = async () => {
     if (!isValidGitHubUrl(repoUrl)) {
