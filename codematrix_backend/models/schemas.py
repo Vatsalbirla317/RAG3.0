@@ -5,6 +5,7 @@ from enum import Enum
 
 # Enums
 class RepositoryStatus(str, Enum):
+    IDLE = "idle"
     CLONING = "cloning"
     INDEXING = "indexing"
     READY = "ready"
