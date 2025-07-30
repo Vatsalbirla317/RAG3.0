@@ -1,9 +1,13 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
 
+/* stylelint-disable at-rule-no-unknown */
+/* csslint ignore:start */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* csslint ignore:end */
+/* stylelint-enable at-rule-no-unknown */
 
 @layer base {
   :root {
