@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import os
 from datetime import datetime
@@ -37,9 +38,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
-    return {"message": "Hello World"}
+    """
+    Redirects the root URL to the API documentation.
+    """
+    return RedirectResponse(url="/docs")
 
 @app.get("/health")
 async def health_check():
