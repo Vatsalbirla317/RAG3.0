@@ -13,7 +13,6 @@
   "env": {
     "VITE_API_URL": "https://rag3-0.onrender.com"
   },
-  "functions": {},
   "headers": [
     {
       "source": "/(.*)",
