@@ -33,7 +33,7 @@ async def query_codebase(question: str, top_k: int = 5):
 
         # Check if vector store exists in memory
         if repo_name not in VECTOR_STORES:
-            return {"answer": f"Repository '{repo_name}' is loaded but not properly indexed. Please re-clone the repository to rebuild the index.", "retrieved_code": []}
+            return {"answer": f"Repository '{repo_name}' was previously loaded but the index has been cleared (likely due to server restart). Please re-clone the repository to rebuild the index.", "retrieved_code": []}
 
         # Get the in-memory vector store
         vectorstore = VECTOR_STORES[repo_name]

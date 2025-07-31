@@ -50,6 +50,16 @@ export const apiService = {
     return response.data;
   },
 
+  async checkRepoStatus(): Promise<any> {
+    const response = await api.get('/debug/check-repo');
+    return response.data;
+  },
+
+  async validateState(): Promise<any> {
+    const response = await api.get('/validate-state');
+    return response.data;
+  },
+
   async getHealth(): Promise<any> {
     const response = await api.get('/health');
     return response.data;

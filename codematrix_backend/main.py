@@ -150,12 +150,66 @@ async def debug_state():
         "vector_db_exists": get_vector_db(state.get('repo_name', '')) is not None if state.get("repo_name") else False
     }
 
+@app.get("/debug/check-repo")
+async def check_repository_status():
+    """
+    Check if the current repository is properly loaded and indexed.
+    """
+    state = await get_state()
+    repo_name = state.get("repo_name", "")
+    vector_stores = get_vector_store_info()
+    
+    return {
+        "repo_name": repo_name,
+        "repo_status": state.get("status", "unknown"),
+        "vector_stores": vector_stores,
+        "has_vector_store": repo_name in vector_stores.get("stores", []),
+        "is_processing": state.get("is_processing", False),
+        "repo_metadata": state.get("repo_metadata", {}),
+        "message": "Repository check completed"
+    }
+
 @app.get("/debug/vector-stores")
 async def debug_vector_stores():
     """
     Returns information about current vector stores in memory.
     """
     return get_vector_store_info()
+
+@app.get("/validate-state")
+async def validate_state():
+    """
+    Validates if the current repository state is still valid.
+    Returns whether the repository needs to be re-cloned.
+    """
+    state = await get_state()
+    repo_name = state.get("repo_name", "")
+    vector_stores = get_vector_store_info()
+    
+    if not repo_name:
+        return {
+            "valid": False,
+            "message": "No repository loaded",
+            "needs_reclone": False
+        }
+    
+    has_vector_store = repo_name in vector_stores.get("stores", [])
+    
+    if not has_vector_store:
+        return {
+            "valid": False,
+            "message": f"Repository '{repo_name}' state is invalid - vector store missing",
+            "needs_reclone": True,
+            "repo_name": repo_name
+        }
+    
+    return {
+        "valid": True,
+        "message": f"Repository '{repo_name}' is properly loaded and indexed",
+        "needs_reclone": False,
+        "repo_name": repo_name,
+        "metadata": state.get("repo_metadata", {})
+    }
 
 @app.get("/repo_info", response_model=RepoInfoResponse)
 async def get_repo_info():
