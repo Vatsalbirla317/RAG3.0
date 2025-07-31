@@ -45,6 +45,11 @@ export const apiService = {
     return response.data;
   },
 
+  async getRepoStats(): Promise<any> {
+    const response = await api.get('/repo_stats');
+    return response.data;
+  },
+
   async getHealth(): Promise<any> {
     const response = await api.get('/health');
     return response.data;

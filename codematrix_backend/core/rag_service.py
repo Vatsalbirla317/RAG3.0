@@ -22,6 +22,7 @@ async def query_codebase(question: str, top_k: int = 5):
     try:
         current_state = await get_state()
         repo_name = current_state.get("repo_name")
+        repo_path = current_state.get("repo_path")
 
         if not repo_name:
             return {"answer": "No repository is currently loaded. Please clone a repository first.", "retrieved_code": []}
@@ -32,13 +33,29 @@ async def query_codebase(question: str, top_k: int = 5):
 
         # Check if vector store exists in memory
         if repo_name not in VECTOR_STORES:
-            return {"answer": "Vector database for this repository not found. Please re-index.", "retrieved_code": []}
+            return {"answer": f"Repository '{repo_name}' is loaded but not properly indexed. Please re-clone the repository to rebuild the index.", "retrieved_code": []}
 
         # Get the in-memory vector store
         vectorstore = VECTOR_STORES[repo_name]
         retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
 
-        # 2. Define the RAG prompt template with smarter context handling
+        # Get repository metadata for better context
+        repo_metadata = current_state.get("repo_metadata", {})
+        metadata_context = ""
+        if repo_metadata:
+            metadata_context = f"""
+Repository Metadata:
+- Total files: {repo_metadata.get('total_files', 0)}
+- Code files: {repo_metadata.get('code_files', 0)}
+- Total lines of code: {repo_metadata.get('total_lines', 0)}
+- File types: {', '.join([f'{ext}: {count}' for ext, count in repo_metadata.get('file_types', {}).items()])}
+- Has README: {repo_metadata.get('has_readme', False)}
+- Has requirements: {repo_metadata.get('has_requirements', False)}
+- Has package.json: {repo_metadata.get('has_package_json', False)}
+
+"""
+
+        # Enhanced RAG prompt template with better context handling
         template = """
         You are a senior software engineer and an expert in the codebase provided. You have access to the repository: {repo_name}
 
@@ -51,7 +68,13 @@ async def query_codebase(question: str, top_k: int = 5):
         4. If asked about repository structure, file types, or organization, analyze the context to provide a comprehensive overview
         5. Use your knowledge to infer file types and structure from the file paths and content in the context
         6. Don't list every single file unless specifically asked - provide summaries and patterns instead
+        7. For questions about "what does it do", focus on the main functionality and purpose
+        8. For questions about README files, look for documentation and project descriptions
+        9. For line count questions, provide estimates based on the context provided
+        10. Always be honest about what you know vs what you don't know
+        11. Use the repository metadata to provide accurate statistics when available
 
+        {metadata_context}
         Context:
         {context}
 
@@ -61,7 +84,7 @@ async def query_codebase(question: str, top_k: int = 5):
         """
         prompt = ChatPromptTemplate.from_template(template)
 
-        # 3. Create the RAG chain using LangChain Expression Language (LCEL)
+        # Create the RAG chain using LangChain Expression Language (LCEL)
         rag_chain = (
             {
                 "context": retriever | format_docs, 
@@ -73,10 +96,10 @@ async def query_codebase(question: str, top_k: int = 5):
             | StrOutputParser()
         )
 
-        # 4. Invoke the chain and get the response
+        # Invoke the chain and get the response
         answer = rag_chain.invoke(question)
 
-        # 5. Retrieve the source documents for the frontend
+        # Retrieve the source documents for the frontend
         retrieved_docs = retriever.get_relevant_documents(question)
         retrieved_code = [doc.page_content for doc in retrieved_docs]
 

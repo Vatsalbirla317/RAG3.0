@@ -173,6 +173,25 @@ async def get_repo_info():
         repo_description="Repository loaded and indexed in memory"
     )
 
+@app.get("/repo_stats")
+async def get_repo_stats():
+    """
+    Returns detailed statistics about the currently loaded repository.
+    """
+    state = await get_state()
+    repo_name = state.get("repo_name", "")
+    repo_metadata = state.get("repo_metadata", {})
+    
+    if not repo_name:
+        raise HTTPException(status_code=404, detail="No repository currently loaded")
+    
+    return {
+        "repo_name": repo_name,
+        "status": state.get("status", "unknown"),
+        "metadata": repo_metadata,
+        "vector_store_exists": get_vector_db(repo_name) is not None
+    }
+
 @app.post("/chat", response_model=ChatResponse, tags=["AI"])
 async def chat_with_repo(request: ChatRequest):
     """

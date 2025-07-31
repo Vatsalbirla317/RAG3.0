@@ -205,11 +205,15 @@ async def clone_and_process_repo(repo_url):
         # Store in memory instead of filesystem
         store_vector_db(repo_name, vectorstore)
 
+        # Collect repository metadata for better analysis
+        repo_metadata = await collect_repository_metadata(repo_path, texts)
+        
         await update_state(
             status="ready",
             message="Repository successfully indexed and ready to be queried.",
             progress=1.0,
             repo_path=repo_path,
+            repo_metadata=repo_metadata
         )
         print(f"Successfully processed and indexed {repo_name}")
 
@@ -218,4 +222,62 @@ async def clone_and_process_repo(repo_url):
         await update_state(status="error", message=str(e), progress=0.0)
     finally:
         # ALWAYS RELEASE THE LOCK
-        await update_state(is_processing=False) 
+        await update_state(is_processing=False)
+
+async def collect_repository_metadata(repo_path: str, texts: list) -> dict:
+    """Collect comprehensive metadata about the repository"""
+    try:
+        metadata = {
+            "total_files": 0,
+            "code_files": 0,
+            "file_types": {},
+            "total_lines": 0,
+            "languages": set(),
+            "has_readme": False,
+            "has_requirements": False,
+            "has_package_json": False,
+            "main_files": []
+        }
+        
+        # Count files and collect metadata
+        for root, dirs, filenames in os.walk(repo_path):
+            for filename in filenames:
+                metadata["total_files"] += 1
+                file_path = os.path.join(root, filename)
+                file_ext = os.path.splitext(filename)[1].lower()
+                
+                # Track file types
+                if file_ext:
+                    metadata["file_types"][file_ext] = metadata["file_types"].get(file_ext, 0) + 1
+                
+                # Check for specific important files
+                if filename.lower() in ['readme.md', 'readme.txt', 'readme']:
+                    metadata["has_readme"] = True
+                elif filename.lower() in ['requirements.txt', 'pyproject.toml', 'setup.py']:
+                    metadata["has_requirements"] = True
+                elif filename.lower() == 'package.json':
+                    metadata["has_package_json"] = True
+                
+                # Count code files
+                if file_ext in ['.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.cpp', '.c', '.go', '.rs', '.php', '.rb']:
+                    metadata["code_files"] += 1
+                    # Estimate lines of code (rough estimate)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            lines = f.readlines()
+                            metadata["total_lines"] += len(lines)
+                    except:
+                        pass
+        
+        # Convert set to list for JSON serialization
+        metadata["languages"] = list(metadata["languages"])
+        
+        # Estimate total lines from text chunks
+        metadata["estimated_lines"] = len(texts) * 50  # Rough estimate
+        
+        print(f"Repository metadata collected: {metadata}")
+        return metadata
+        
+    except Exception as e:
+        print(f"Error collecting repository metadata: {e}")
+        return {} 
