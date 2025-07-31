@@ -8,7 +8,8 @@ from langchain.schema.output_parser import StrOutputParser
 from .ai_service import gemini_embeddings, groq_chat
 from .state_manager import get_state
 
-VECTOR_DB_DIR = "vector_db"
+# Use in-memory storage instead of filesystem for Render compatibility
+VECTOR_STORES = {}  # In-memory storage for vector databases
 
 def format_docs(docs):
     """Helper function to format retrieved documents into a single string."""
@@ -25,12 +26,12 @@ async def query_codebase(question: str, top_k: int = 5):
         if not repo_name:
             return {"answer": "No repository is currently loaded. Please clone a repository first.", "retrieved_code": []}
 
-        vector_db_path = os.path.join(VECTOR_DB_DIR, repo_name)
-        if not os.path.exists(vector_db_path):
+        # Check if vector store exists in memory
+        if repo_name not in VECTOR_STORES:
             return {"answer": "Vector database for this repository not found. Please re-index.", "retrieved_code": []}
 
-        # 1. Load the existing vector store
-        vectorstore = Chroma(persist_directory=vector_db_path, embedding_function=gemini_embeddings)
+        # Get the in-memory vector store
+        vectorstore = VECTOR_STORES[repo_name]
         retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
 
         # 2. Define the RAG prompt template
@@ -68,4 +69,17 @@ async def query_codebase(question: str, top_k: int = 5):
         return {"answer": answer, "retrieved_code": retrieved_code}
     except Exception as e:
         print(f"Error in RAG query: {e}")
-        return {"answer": f"An error occurred while processing your question: {str(e)}", "retrieved_code": []} 
+        return {"answer": f"An error occurred while processing your question: {str(e)}", "retrieved_code": []}
+
+def store_vector_db(repo_name: str, vectorstore):
+    """Store vector database in memory"""
+    VECTOR_STORES[repo_name] = vectorstore
+
+def get_vector_db(repo_name: str):
+    """Get vector database from memory"""
+    return VECTOR_STORES.get(repo_name)
+
+def clear_vector_db(repo_name: str):
+    """Clear vector database from memory"""
+    if repo_name in VECTOR_STORES:
+        del VECTOR_STORES[repo_name] 

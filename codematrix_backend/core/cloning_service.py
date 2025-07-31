@@ -12,9 +12,9 @@ from langchain_community.vectorstores import Chroma
 
 from .state_manager import update_state
 from .ai_service import gemini_embeddings
+from .rag_service import store_vector_db, clear_vector_db
 
 REPO_DIR = "repositories"
-VECTOR_DB_DIR = "vector_db"
 
 async def clone_and_process_repo(repo_url: str):
     try:
@@ -23,7 +23,9 @@ async def clone_and_process_repo(repo_url: str):
         
         repo_name = os.path.basename(urlparse(repo_url).path).replace('.git', '')
         repo_path = os.path.join(REPO_DIR, repo_name)
-        vector_db_path = os.path.join(VECTOR_DB_DIR, repo_name)
+
+        # Clear any existing in-memory vector store for this repo
+        clear_vector_db(repo_name)
 
         # --- 1. SMART CLONING / PULLING ---
         await update_state(status="cloning", message=f"Accessing repository {repo_name}...", progress=0.1, repo_name=repo_name)
@@ -35,9 +37,6 @@ async def clone_and_process_repo(repo_url: str):
                 repo = git.Repo(repo_path)
                 origin = repo.remotes.origin
                 origin.pull()
-                # If we pull, we must re-index, so delete the old vector store.
-                if os.path.exists(vector_db_path):
-                    shutil.rmtree(vector_db_path)
             except Exception as e:
                 print(f"Error pulling repo, attempting to re-clone. Error: {e}")
                 try:
@@ -75,14 +74,17 @@ async def clone_and_process_repo(repo_url: str):
 
         print(f"Loaded {len(documents)} documents, split into {len(texts)} chunks.")
 
-        # --- 3. EMBEDDING & STORING ---
+        # --- 3. EMBEDDING & STORING IN MEMORY ---
         await update_state(status="indexing", message=f"Creating embeddings for {len(texts)} code chunks...", progress=0.7)
 
-        Chroma.from_documents(
+        # Create in-memory vector store
+        vectorstore = Chroma.from_documents(
             texts,
-            gemini_embeddings,
-            persist_directory=vector_db_path
+            gemini_embeddings
         )
+        
+        # Store in memory instead of filesystem
+        store_vector_db(repo_name, vectorstore)
 
         await update_state(
             status="ready",

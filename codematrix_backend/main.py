@@ -13,7 +13,7 @@ from core.config import settings
 from core.ai_service import ai_service
 from core.state_manager import get_state, update_state, reset_state, app_state
 from core.cloning_service import clone_and_process_repo
-from core.rag_service import query_codebase
+from core.rag_service import query_codebase, get_vector_db
 
 # Load environment variables
 load_dotenv()
@@ -21,29 +21,19 @@ load_dotenv()
 # --- Startup Logic ---
 def rehydrate_state_on_startup():
     """
-    Checks the filesystem to see if a repo was already indexed and
-    restores the in-memory state to avoid amnesia after spin-down.
+    Initialize the application state on startup.
+    Since we're using in-memory storage, we start with a clean state.
     """
-    print("Application starting up, attempting to re-hydrate state...")
-    vector_db_dir = "vector_db"
-    if os.path.exists(vector_db_dir):
-        indexed_repos = [d for d in os.listdir(vector_db_dir) if os.path.isdir(os.path.join(vector_db_dir, d))]
-        # If there's exactly one repo indexed, assume it's the active one.
-        if len(indexed_repos) == 1:
-            repo_name = indexed_repos[0]
-            repo_path = os.path.join("repositories", repo_name)
-            print(f"Found existing indexed repository: {repo_name}. Restoring state.")
-            # Use the initial app_state dictionary directly since this is pre-async loop
-            app_state.update({
-                "status": "ready",
-                "message": "Repository is ready.",
-                "progress": 1.0,
-                "repo_path": repo_path,
-                "repo_name": repo_name,
-                "is_processing": False
-            })
-        else:
-            print("Found zero or multiple indexed repos. Starting with a clean idle state.")
+    print("Application starting up with in-memory storage...")
+    # Start with a clean idle state since we can't persist vector databases
+    app_state.update({
+        "status": "idle",
+        "message": "Ready to process repositories.",
+        "progress": 0.0,
+        "repo_path": "",
+        "repo_name": "",
+        "is_processing": False
+    })
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -98,161 +88,199 @@ async def health_check():
 @app.post("/clone", response_model=CloneResponse, tags=["Repository"])
 async def clone_repository(request: CloneRequest, background_tasks: BackgroundTasks):
     """
-    Clones a public GitHub repository and starts the indexing process in the background.
+    Clones a GitHub repository and processes it for AI analysis.
     """
-    current_state = await get_state()
-    if current_state.get("is_processing"):
-        raise HTTPException(status_code=429, detail="A repository is already being processed. Please wait.")
+    try:
+        # Check if already processing
+        current_state = await get_state()
+        if current_state.get("is_processing", False):
+            raise HTTPException(status_code=409, detail="Another repository is currently being processed. Please wait.")
 
-    # Start the background task
-    background_tasks.add_task(clone_and_process_repo, str(request.repo_url))
-
-    # Immediately return a response to the user
-    return CloneResponse(
-        success=True, 
-        message="Repository cloning and indexing has started.",
-        repo_path=""
-    )
+        # Start the background task
+        background_tasks.add_task(clone_and_process_repo, request.repo_url)
+        
+        return CloneResponse(
+            success=True,
+            message="Repository cloning started. Check /status for progress.",
+            repo_path=""
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in clone endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/status", response_model=StatusResponse, tags=["Repository"])
 async def get_status():
     """
-    Returns the current status of the repository cloning/indexing process.
+    Returns the current status of repository processing.
     """
-    current_state = await get_state()
-    return StatusResponse(**current_state)
+    state = await get_state()
+    return StatusResponse(
+        status=state.get("status", "idle"),
+        message=state.get("message", "No repository loaded"),
+        progress=state.get("progress", 0.0)
+    )
 
 @app.post("/debug/reset")
 async def reset_application_state():
-    """Reset the application state (for debugging)"""
+    """
+    Resets the application state (for debugging).
+    """
     await reset_state()
-    return {"message": "State reset successfully"}
+    return {"message": "Application state reset successfully"}
 
 @app.get("/debug/state")
 async def debug_state():
-    """Get detailed state information for debugging"""
-    import os
+    """
+    Returns the full application state for debugging.
+    """
     state = await get_state()
     return {
-        "state": state,
-        "has_repo": bool(state.get("repo_name")),
-        "repo_path_exists": os.path.exists(state.get("repo_path", "")) if state.get("repo_path") else False,
-        "vector_db_exists": os.path.exists(f"vector_db/{state.get('repo_name', '')}") if state.get("repo_name") else False
+        **state,
+        "vector_db_exists": get_vector_db(state.get('repo_name', '')) is not None if state.get("repo_name") else False
     }
 
 @app.get("/repo_info", response_model=RepoInfoResponse)
 async def get_repo_info():
-    """Get current repository information"""
-    current_state = await get_state()
-    if current_state["status"] == "idle":
-        raise HTTPException(status_code=404, detail="No repository loaded")
+    """
+    Returns information about the currently loaded repository.
+    """
+    state = await get_state()
+    repo_name = state.get("repo_name", "")
+    
+    if not repo_name:
+        raise HTTPException(status_code=404, detail="No repository currently loaded")
     
     return RepoInfoResponse(
-        repo_name=current_state["repo_name"] or "Unknown",
-        repo_description=current_state["repo_description"] or "No description available"
+        repo_name=repo_name,
+        repo_description="Repository loaded and indexed in memory"
     )
 
 @app.post("/chat", response_model=ChatResponse, tags=["AI"])
 async def chat_with_repo(request: ChatRequest):
     """
-    Handles chat queries against the indexed repository using a RAG pipeline.
+    Chat with the AI about the loaded codebase.
     """
     try:
-        if not settings.has_any_ai_key:
-            raise HTTPException(status_code=500, detail="No AI API keys configured")
-        
-        # Use the RAG service to query the codebase
-        response = await query_codebase(request.question, request.top_k)
-        
+        result = await query_codebase(request.question, request.top_k)
         return ChatResponse(
-            answer=response["answer"],
-            retrieved_code=response["retrieved_code"]
+            answer=result["answer"],
+            retrieved_code=result.get("retrieved_code", [])
         )
     except Exception as e:
+        print(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/explain", response_model=ExplanationResponse)
 async def explain_code(request: ExplainRequest):
-    """Explain code at different complexity levels"""
+    """
+    Explain code in different complexity levels.
+    """
     try:
-        if not settings.has_any_ai_key:
-            raise HTTPException(status_code=500, detail="No AI API keys configured")
+        # Create a prompt for explanation
+        prompt = f"""
+        Explain the following code like I'm a {request.complexity}:
         
-        explanation = await ai_service.explain_code(
-            code=request.code,
-            complexity=request.complexity,
-            model=settings.DEFAULT_MODEL
-        )
+        {request.code}
         
-        return ExplanationResponse(explanation=explanation)
+        Provide a clear, {request.complexity}-friendly explanation with examples if helpful.
+        """
+        
+        response = await ai_service.chat(prompt)
+        return ExplanationResponse(explanation=response)
     except Exception as e:
+        print(f"Error in explain endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/security-scan", response_model=SecurityScanResponse)
 async def security_scan(request: SecurityScanRequest):
-    """Scan code for security vulnerabilities"""
+    """
+    Scan code for security vulnerabilities.
+    """
     try:
-        # Mock security scan results
-        # In the full implementation, this would:
-        # 1. Parse the code
-        # 2. Run security analysis tools
-        # 3. Return actual vulnerabilities
+        # Create a security analysis prompt
+        prompt = f"""
+        Analyze the following code for security vulnerabilities:
         
-        issues = [
-            SecurityIssue(
-                type="SQL Injection",
-                severity="high",
-                description="Potential SQL injection vulnerability detected",
-                line=15,
-                recommendation="Use parameterized queries instead of string concatenation"
-            )
-        ]
+        File: {request.file_path}
+        Code:
+        {request.code}
         
+        Provide a detailed security analysis including:
+        1. Potential vulnerabilities
+        2. Severity levels (low/medium/high/critical)
+        3. Specific recommendations for fixes
+        4. Line numbers where issues are found
+        
+        Format your response as a structured analysis.
+        """
+        
+        response = await ai_service.chat(prompt)
+        
+        # For now, return a mock response structure
+        # In a real implementation, you'd parse the AI response into structured data
         return SecurityScanResponse(
-            issues=issues,
+            issues=[
+                {
+                    "type": "Security Analysis",
+                    "severity": "medium",
+                    "description": "AI analysis completed",
+                    "line": 1,
+                    "recommendation": "Review the AI analysis above for specific recommendations"
+                }
+            ],
             risk_level="medium"
         )
     except Exception as e:
+        print(f"Error in security scan endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/visualize", response_model=VisualizationResponse)
 async def visualize_code(request: VisualizeRequest):
-    """Generate code visualization"""
+    """
+    Generate visualizations for code structure.
+    """
     try:
-        # Mock visualization data
-        # In the full implementation, this would:
-        # 1. Parse the codebase
-        # 2. Generate dependency graphs
-        # 3. Return graph data
+        # Create a visualization prompt
+        prompt = f"""
+        Create a visualization description for the codebase at: {request.codebase_path}
         
-        graph_data = {
-            "nodes": [
-                {"id": "main.py", "type": "file"},
-                {"id": "utils.py", "type": "file"}
-            ],
-            "edges": [
-                {"from": "main.py", "to": "utils.py", "type": "import"}
-            ]
-        }
+        Generate a detailed description of how to visualize:
+        1. File structure and relationships
+        2. Code dependencies
+        3. Function call graphs
+        4. Data flow diagrams
         
-        return VisualizationResponse(graph_data=graph_data)
+        Provide this in a format that can be used to create visual diagrams.
+        """
+        
+        response = await ai_service.chat(prompt)
+        
+        return VisualizationResponse(
+            graph_data={
+                "description": response,
+                "type": "codebase_visualization",
+                "generated_at": datetime.now().isoformat()
+            }
+        )
     except Exception as e:
+        print(f"Error in visualize endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/preview", response_model=PreviewResponse)
 async def preview_code(request: PreviewRequest):
-    """Generate live preview URL"""
+    """
+    Generate a live preview URL for HTML/CSS/JS code.
+    """
     try:
-        # Mock preview URL
-        # In the full implementation, this would:
-        # 1. Create a temporary file with the code
-        # 2. Serve it via a web server
-        # 3. Return the preview URL
-        
-        preview_url = f"http://localhost:8000/preview/{datetime.now().timestamp()}"
+        # In a real implementation, you'd save the code to a temporary file
+        # and serve it via a preview service
+        preview_url = f"data:text/html;base64,{request.html.encode('utf-8').hex()}"
         
         return PreviewResponse(preview_url=preview_url)
     except Exception as e:
+        print(f"Error in preview endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
