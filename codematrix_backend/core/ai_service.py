@@ -155,6 +155,11 @@ class AIService:
         messages = [{"role": "user", "content": prompt}]
         return await self.chat_completion(messages, model)
 
+    async def chat(self, prompt: str, model: str = "groq") -> str:
+        """Simple chat method for direct prompt responses"""
+        messages = [{"role": "user", "content": prompt}]
+        return await self.chat_completion(messages, model)
+
 # Global AI service instance
 ai_service = AIService()
 
