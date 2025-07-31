@@ -25,6 +25,38 @@ async def clone_and_process_repo(repo_url):
         repo_url = str(repo_url)
         print(f"Processing repository URL: {repo_url}")
         
+        # Check repository size before cloning
+        try:
+            import requests
+            
+            # Extract owner and repo from URL
+            path = urlparse(repo_url).path
+            parts = path.strip('/').split('/')
+            if len(parts) >= 2:
+                owner, repo = parts[0], parts[1]
+                
+                # Check repository size via GitHub API
+                api_url = f"https://api.github.com/repos/{owner}/{repo}"
+                response = requests.get(api_url, timeout=10)
+                if response.status_code == 200:
+                    repo_data = response.json()
+                    size_kb = repo_data.get('size', 0)
+                    size_mb = size_kb / 1024
+                    
+                    # Warn if repository is too large
+                    if size_mb > 50:  # 50MB limit
+                        await update_state({
+                            "status": "error",
+                            "message": f"Repository is too large ({size_mb:.1f}MB). Please use a smaller repository (< 50MB) for better performance.",
+                            "progress": 0.0
+                        })
+                        return
+                    elif size_mb > 10:  # 10MB warning
+                        print(f"Warning: Large repository detected ({size_mb:.1f}MB). Processing may take longer.")
+        except Exception as e:
+            print(f"Could not check repository size: {e}")
+            # Continue with cloning if size check fails
+        
         # SET THE LOCK
         await update_state(is_processing=True)
         

@@ -31,12 +31,22 @@ async def query_codebase(question: str, top_k: int = 5, current_file: str = None
         print(f"Current vector stores in memory: {list(VECTOR_STORES.keys())}")
         print(f"Looking for repository: {repo_name}")
 
-        # Check if vector store exists in memory
-        if repo_name not in VECTOR_STORES:
-            return {"answer": f"Repository '{repo_name}' was previously loaded but the index has been cleared (likely due to server restart). Please re-clone the repository to rebuild the index.", "retrieved_code": []}
+        # Check if vector store exists in memory - try exact match first, then partial match
+        vectorstore = None
+        if repo_name in VECTOR_STORES:
+            vectorstore = VECTOR_STORES[repo_name]
+        else:
+            # Try to find a partial match (in case repo name has timestamp suffix)
+            for store_name in VECTOR_STORES.keys():
+                if repo_name in store_name or store_name in repo_name:
+                    vectorstore = VECTOR_STORES[store_name]
+                    print(f"Found partial match: {store_name} for {repo_name}")
+                    break
+        
+        if not vectorstore:
+            return {"answer": f"No repository index found for '{repo_name}'. Please clone a repository first.", "retrieved_code": []}
 
-        # Get the in-memory vector store
-        vectorstore = VECTOR_STORES[repo_name]
+        # Vector store already retrieved above
         
         # Enhanced retrieval strategy for Cursor-like behavior
         if current_file:
@@ -61,7 +71,7 @@ Repository Metadata:
 
 """
 
-        # Enhanced Cursor-like prompt template
+        # Enhanced Cursor-like prompt template with dynamic context awareness
         template = """
 You are an expert AI coding assistant similar to Cursor's AI. You have deep understanding of the codebase and can provide intelligent code suggestions, explanations, and improvements.
 
@@ -70,40 +80,56 @@ Repository: {repo_name}
 {metadata_context}
 
 IMPORTANT GUIDELINES (Cursor-like behavior):
-1. **Code Understanding**: Analyze the code structure, patterns, and relationships
-2. **Intelligent Suggestions**: Provide specific, actionable code improvements
-3. **Context Awareness**: Consider the broader codebase context when answering
-4. **Best Practices**: Suggest modern coding practices and patterns
-5. **Error Detection**: Identify potential bugs, issues, or improvements
-6. **Code Generation**: When asked, provide complete, working code examples
-7. **Refactoring**: Suggest ways to improve code organization and structure
-8. **Documentation**: Help explain complex code sections clearly
-9. **Performance**: Suggest optimizations when relevant
-10. **Security**: Point out potential security issues
-11. **File Relationships**: Explain how different files work together
-12. **Architecture**: Provide insights about the overall system design
+1. **Dynamic Responses**: Always base your answers on the actual repository content and context provided
+2. **No Hardcoding**: Never give hardcoded responses - analyze the actual code and metadata
+3. **Context Awareness**: Use the repository metadata and code context to provide accurate answers
+4. **Code Understanding**: Analyze the code structure, patterns, and relationships
+5. **Intelligent Suggestions**: Provide specific, actionable code improvements
+6. **Best Practices**: Suggest modern coding practices and patterns
+7. **Error Detection**: Identify potential bugs, issues, or improvements
+8. **Code Generation**: When asked, provide complete, working code examples
+9. **Refactoring**: Suggest ways to improve code organization and structure
+10. **Documentation**: Help explain complex code sections clearly
+11. **Performance**: Suggest optimizations when relevant
+12. **Security**: Point out potential security issues
+13. **File Relationships**: Explain how different files work together
+14. **Architecture**: Provide insights about the overall system design
 
-Current Context:
+Repository Context:
+{repo_context}
+
+Code Context:
 {context}
 
 {focus_context}
 
 Question: {question}
 
-Provide a comprehensive, Cursor-like response that includes:
-- Clear explanation of the code
-- Specific suggestions for improvements
-- Code examples when helpful
-- Best practices recommendations
-- Any potential issues or concerns
+RESPONSE GUIDELINES:
+- **For simple questions**: Analyze the repository metadata and context to give accurate, dynamic answers
+- **For code analysis**: Provide comprehensive, Cursor-like responses based on the actual code
+- **Always be dynamic**: Base every response on the actual repository content, not hardcoded information
+- **Use context**: Leverage the provided code context and metadata for accurate responses
 
 Answer:
 """
         prompt = ChatPromptTemplate.from_template(template)
 
-        # Enhanced context preparation
+        # Enhanced context preparation with better retrieval
         retrieved_docs = retriever.get_relevant_documents(question)
         context = format_docs(retrieved_docs)
+        
+        # Add repository-specific context for better dynamic responses
+        repo_context = f"""
+Repository Information:
+- Name: {repo_name}
+- Total Files: {repo_metadata.get('total_files', 0)}
+- Code Files: {repo_metadata.get('code_files', 0)}
+- File Types: {', '.join([f'{ext}: {count}' for ext, count in repo_metadata.get('file_types', {}).items()])}
+- Has README: {repo_metadata.get('has_readme', False)}
+- Has Requirements: {repo_metadata.get('has_requirements', False)}
+- Estimated Lines: {repo_metadata.get('estimated_lines', 0)}
+"""
         
         # Add focus context if we have a current file
         focus_context = ""
@@ -122,7 +148,8 @@ FOCUS CONTEXT:
                 "question": RunnablePassthrough(),
                 "repo_name": lambda x: repo_name,
                 "metadata_context": lambda x: metadata_context,
-                "focus_context": lambda x: focus_context
+                "focus_context": lambda x: focus_context,
+                "repo_context": lambda x: repo_context
             }
             | prompt
             | groq_chat
