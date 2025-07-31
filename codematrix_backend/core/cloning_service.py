@@ -16,8 +16,14 @@ from .rag_service import store_vector_db, clear_vector_db
 
 REPO_DIR = "repositories"
 
-async def clone_and_process_repo(repo_url: str):
+async def clone_and_process_repo(repo_url):
     try:
+        # Convert Pydantic HttpUrl to string if needed
+        if hasattr(repo_url, 'str'):
+            repo_url = str(repo_url)
+        elif hasattr(repo_url, 'decode'):
+            repo_url = repo_url.decode()
+        
         # SET THE LOCK
         await update_state(is_processing=True)
         
