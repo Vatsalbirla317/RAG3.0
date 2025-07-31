@@ -18,11 +18,9 @@ REPO_DIR = "repositories"
 
 async def clone_and_process_repo(repo_url):
     try:
-        # Convert Pydantic HttpUrl to string if needed
-        if hasattr(repo_url, 'str'):
-            repo_url = str(repo_url)
-        elif hasattr(repo_url, 'decode'):
-            repo_url = repo_url.decode()
+        # Convert to string - Pydantic HttpUrl should convert automatically
+        repo_url = str(repo_url)
+        print(f"Processing repository URL: {repo_url}")
         
         # SET THE LOCK
         await update_state(is_processing=True)
