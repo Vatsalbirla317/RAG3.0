@@ -58,8 +58,27 @@ async def clone_and_process_repo(repo_url):
         # --- 2. INDEXING (LOADING & SPLITTING) ---
         await update_state(status="indexing", message="Parsing code files...", progress=0.4)
 
+        # Get absolute path to ensure we're loading from the right directory
+        abs_repo_path = os.path.abspath(repo_path)
+        print(f"Loading documents from absolute path: {abs_repo_path}")
+        
+        # Verify the directory exists and contains files
+        if not os.path.exists(abs_repo_path):
+            raise ValueError(f"Repository directory does not exist: {abs_repo_path}")
+        
+        # List some files to verify we're in the right place
+        files = []
+        for root, dirs, filenames in os.walk(abs_repo_path):
+            for filename in filenames:
+                if filename.endswith(('.py', '.js', '.ts', '.md', '.java', '.html', '.css')):
+                    files.append(os.path.join(root, filename))
+        
+        print(f"Found {len(files)} code files in repository")
+        if files:
+            print(f"Sample files: {files[:5]}")
+
         loader = GenericLoader.from_filesystem(
-            repo_path,
+            abs_repo_path,
             glob="**/*",
             suffixes=[".py", ".js", ".ts", ".md", ".java", ".html", ".css"],
             parser=LanguageParser(parser_threshold=500),
@@ -68,6 +87,12 @@ async def clone_and_process_repo(repo_url):
 
         if not documents:
             raise ValueError("No supported code files found in the repository.")
+
+        print(f"Loaded {len(documents)} documents from repository")
+        
+        # Debug: Show some document sources
+        for i, doc in enumerate(documents[:3]):
+            print(f"Document {i}: {doc.metadata.get('source', 'unknown')}")
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=2000, chunk_overlap=200)
         js_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.JS, chunk_size=2000, chunk_overlap=200)
