@@ -142,6 +142,16 @@ async def clone_and_process_repo(repo_url):
         if not os.path.exists(abs_repo_path):
             raise ValueError(f"Repository directory does not exist: {abs_repo_path}")
         
+        # List ALL files in the repository for debugging
+        all_files = []
+        for root, dirs, filenames in os.walk(abs_repo_path):
+            for filename in filenames:
+                file_path = os.path.join(root, filename)
+                all_files.append(file_path)
+        
+        print(f"TOTAL files found in repository: {len(all_files)}")
+        print(f"ALL files: {all_files}")
+        
         # List some files to verify we're in the right place
         files = []
         for root, dirs, filenames in os.walk(abs_repo_path):
@@ -149,9 +159,11 @@ async def clone_and_process_repo(repo_url):
                 if filename.endswith(('.py', '.js', '.ts', '.md', '.java', '.html', '.css')):
                     files.append(os.path.join(root, filename))
         
-        print(f"Found {len(files)} code files in repository")
+        print(f"Found {len(files)} code files in repository (filtered by extension)")
         if files:
-            print(f"Sample files: {files[:5]}")
+            print(f"Code files: {files}")
+        else:
+            print("WARNING: No code files found with supported extensions!")
 
         loader = GenericLoader.from_filesystem(
             abs_repo_path,
@@ -167,8 +179,9 @@ async def clone_and_process_repo(repo_url):
         print(f"Loaded {len(documents)} documents from repository")
         
         # Debug: Show some document sources
-        for i, doc in enumerate(documents[:3]):
+        for i, doc in enumerate(documents[:5]):
             print(f"Document {i}: {doc.metadata.get('source', 'unknown')}")
+            print(f"  Content preview: {doc.page_content[:200]}...")
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=2000, chunk_overlap=200)
         js_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.JS, chunk_size=2000, chunk_overlap=200)
