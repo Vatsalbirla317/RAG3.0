@@ -12,9 +12,6 @@
   ],
   "env": {
     "VITE_API_URL": "https://rag3-0.onrender.com"
-<<<<<<< Current (Your changes)
-  }
-=======
   },
   "functions": {},
   "headers": [
@@ -36,5 +33,4 @@
       ]
     }
   ]
->>>>>>> Incoming (Background Agent changes)
 }
