@@ -89,7 +89,8 @@ Repository Metadata:
             {
                 "context": retriever | format_docs, 
                 "question": RunnablePassthrough(),
-                "repo_name": lambda x: repo_name
+                "repo_name": lambda x: repo_name,
+                "metadata_context": lambda x: metadata_context
             }
             | prompt
             | groq_chat
