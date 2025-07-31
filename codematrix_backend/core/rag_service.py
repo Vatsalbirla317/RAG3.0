@@ -15,9 +15,9 @@ def format_docs(docs):
     """Helper function to format retrieved documents into a single string."""
     return "\n\n".join(doc.page_content for doc in docs)
 
-async def query_codebase(question: str, top_k: int = 5):
+async def query_codebase(question: str, top_k: int = 5, current_file: str = None, cursor_position: int = None):
     """
-    Performs a RAG query against the indexed codebase.
+    Performs a RAG query against the indexed codebase with Cursor-like enhancements.
     """
     try:
         current_state = await get_state()
@@ -37,7 +37,13 @@ async def query_codebase(question: str, top_k: int = 5):
 
         # Get the in-memory vector store
         vectorstore = VECTOR_STORES[repo_name]
-        retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
+        
+        # Enhanced retrieval strategy for Cursor-like behavior
+        if current_file:
+            # If we have a current file, prioritize it and related files
+            retriever = vectorstore.as_retriever(search_kwargs={"k": top_k + 2})
+        else:
+            retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
 
         # Get repository metadata for better context
         repo_metadata = current_state.get("repo_metadata", {})
@@ -55,42 +61,68 @@ Repository Metadata:
 
 """
 
-        # Enhanced RAG prompt template with better context handling
+        # Enhanced Cursor-like prompt template
         template = """
-        You are a senior software engineer and an expert in the codebase provided. You have access to the repository: {repo_name}
+You are an expert AI coding assistant similar to Cursor's AI. You have deep understanding of the codebase and can provide intelligent code suggestions, explanations, and improvements.
 
-        Answer the user's question based only on the following context. If the answer is not in the context, say you don't know.
-        
-        IMPORTANT GUIDELINES:
-        1. Be concise and direct unless the user asks for detailed information
-        2. For file structure questions, provide a clear overview of file types and organization
-        3. For code questions, provide relevant code snippets from the context
-        4. If asked about repository structure, file types, or organization, analyze the context to provide a comprehensive overview
-        5. Use your knowledge to infer file types and structure from the file paths and content in the context
-        6. Don't list every single file unless specifically asked - provide summaries and patterns instead
-        7. For questions about "what does it do", focus on the main functionality and purpose
-        8. For questions about README files, look for documentation and project descriptions
-        9. For line count questions, provide estimates based on the context provided
-        10. Always be honest about what you know vs what you don't know
-        11. Use the repository metadata to provide accurate statistics when available
+Repository: {repo_name}
 
-        {metadata_context}
-        Context:
-        {context}
+{metadata_context}
 
-        Question: {question}
+IMPORTANT GUIDELINES (Cursor-like behavior):
+1. **Code Understanding**: Analyze the code structure, patterns, and relationships
+2. **Intelligent Suggestions**: Provide specific, actionable code improvements
+3. **Context Awareness**: Consider the broader codebase context when answering
+4. **Best Practices**: Suggest modern coding practices and patterns
+5. **Error Detection**: Identify potential bugs, issues, or improvements
+6. **Code Generation**: When asked, provide complete, working code examples
+7. **Refactoring**: Suggest ways to improve code organization and structure
+8. **Documentation**: Help explain complex code sections clearly
+9. **Performance**: Suggest optimizations when relevant
+10. **Security**: Point out potential security issues
+11. **File Relationships**: Explain how different files work together
+12. **Architecture**: Provide insights about the overall system design
 
-        Answer:
-        """
+Current Context:
+{context}
+
+{focus_context}
+
+Question: {question}
+
+Provide a comprehensive, Cursor-like response that includes:
+- Clear explanation of the code
+- Specific suggestions for improvements
+- Code examples when helpful
+- Best practices recommendations
+- Any potential issues or concerns
+
+Answer:
+"""
         prompt = ChatPromptTemplate.from_template(template)
+
+        # Enhanced context preparation
+        retrieved_docs = retriever.get_relevant_documents(question)
+        context = format_docs(retrieved_docs)
+        
+        # Add focus context if we have a current file
+        focus_context = ""
+        if current_file:
+            focus_context = f"""
+FOCUS CONTEXT:
+- Current file: {current_file}
+- Cursor position: {cursor_position if cursor_position else 'Not specified'}
+- Pay special attention to the current file and its relationships with other files in the codebase.
+"""
 
         # Create the RAG chain using LangChain Expression Language (LCEL)
         rag_chain = (
             {
-                "context": retriever | format_docs, 
+                "context": lambda x: context, 
                 "question": RunnablePassthrough(),
                 "repo_name": lambda x: repo_name,
-                "metadata_context": lambda x: metadata_context
+                "metadata_context": lambda x: metadata_context,
+                "focus_context": lambda x: focus_context
             }
             | prompt
             | groq_chat
@@ -101,7 +133,6 @@ Repository Metadata:
         answer = rag_chain.invoke(question)
 
         # Retrieve the source documents for the frontend
-        retrieved_docs = retriever.get_relevant_documents(question)
         retrieved_code = [doc.page_content for doc in retrieved_docs]
 
         return {"answer": answer, "retrieved_code": retrieved_code}

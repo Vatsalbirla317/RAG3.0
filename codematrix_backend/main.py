@@ -261,6 +261,74 @@ async def chat_with_repo(request: ChatRequest):
         print(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/chat/cursor", response_model=ChatResponse, tags=["AI"])
+async def cursor_like_chat(request: ChatRequest):
+    """
+    Cursor-like chat with enhanced code understanding and suggestions.
+    """
+    try:
+        result = await query_codebase(
+            request.question, 
+            request.top_k,
+            current_file=getattr(request, 'current_file', None),
+            cursor_position=getattr(request, 'cursor_position', None)
+        )
+        return ChatResponse(
+            answer=result["answer"],
+            retrieved_code=result.get("retrieved_code", [])
+        )
+    except Exception as e:
+        print(f"Error in cursor chat endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/code/suggest", response_model=ChatResponse, tags=["AI"])
+async def suggest_code_improvements(request: ChatRequest):
+    """
+    Get code improvement suggestions like Cursor's AI.
+    """
+    try:
+        enhanced_question = f"Analyze this code and provide specific improvement suggestions, best practices, and potential optimizations: {request.question}"
+        result = await query_codebase(enhanced_question, request.top_k)
+        return ChatResponse(
+            answer=result["answer"],
+            retrieved_code=result.get("retrieved_code", [])
+        )
+    except Exception as e:
+        print(f"Error in code suggestion endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/code/refactor", response_model=ChatResponse, tags=["AI"])
+async def suggest_refactoring(request: ChatRequest):
+    """
+    Get refactoring suggestions for better code organization.
+    """
+    try:
+        refactor_question = f"Suggest refactoring improvements for better code organization, maintainability, and structure: {request.question}"
+        result = await query_codebase(refactor_question, request.top_k)
+        return ChatResponse(
+            answer=result["answer"],
+            retrieved_code=result.get("retrieved_code", [])
+        )
+    except Exception as e:
+        print(f"Error in refactoring endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/code/explain", response_model=ChatResponse, tags=["AI"])
+async def explain_code_complexity(request: ChatRequest):
+    """
+    Get detailed code explanations with complexity analysis.
+    """
+    try:
+        explain_question = f"Provide a detailed explanation of this code, including complexity analysis, potential issues, and how it fits into the overall architecture: {request.question}"
+        result = await query_codebase(explain_question, request.top_k)
+        return ChatResponse(
+            answer=result["answer"],
+            retrieved_code=result.get("retrieved_code", [])
+        )
+    except Exception as e:
+        print(f"Error in code explanation endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/explain", response_model=ExplanationResponse)
 async def explain_code(request: ExplainRequest):
     """

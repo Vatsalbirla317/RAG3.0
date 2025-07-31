@@ -21,8 +21,9 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
   const [currentRepo, setCurrentRepo] = useState<Repository | null>(null);
 
   const isValidGitHubUrl = (url: string) => {
-    const pattern = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/;
-    return pattern.test(url);
+    // More robust GitHub URL validation
+    const pattern = /^https:\/\/github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+\/?$/;
+    return pattern.test(url.trim()) && url.length > 0;
   };
 
   const pollStatus = async () => {
@@ -77,11 +78,15 @@ export const RepositoryInput = ({ onRepositoryCloned }: RepositoryInputProps) =>
   };
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: NodeJS.Timeout | undefined;
     if (isCloning) {
       interval = setInterval(pollStatus, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [isCloning]);
 
   const handleClone = async () => {

@@ -20,6 +20,7 @@ export const ChatBox = ({ repository, onSnippetAction }: ChatBoxProps) => {
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [typingText, setTypingText] = useState('');
+  const [chatMode, setChatMode] = useState<'normal' | 'cursor' | 'suggest' | 'refactor' | 'explain'>('cursor');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -42,6 +43,9 @@ export const ChatBox = ({ repository, onSnippetAction }: ChatBoxProps) => {
         callback();
       }
     }, 20);
+    
+    // Return cleanup function
+    return () => clearInterval(timer);
   };
 
   const handleSendMessage = async () => {
@@ -59,7 +63,25 @@ export const ChatBox = ({ repository, onSnippetAction }: ChatBoxProps) => {
     setIsLoading(true);
 
     try {
-      const response = await apiService.chat(currentMessage, 5);
+      let response;
+      
+      // Use different API endpoints based on chat mode
+      switch (chatMode) {
+        case 'cursor':
+          response = await apiService.cursorChat(currentMessage, 5);
+          break;
+        case 'suggest':
+          response = await apiService.suggestCodeImprovements(currentMessage, 5);
+          break;
+        case 'refactor':
+          response = await apiService.suggestRefactoring(currentMessage, 5);
+          break;
+        case 'explain':
+          response = await apiService.explainCodeComplexity(currentMessage, 5);
+          break;
+        default:
+          response = await apiService.chat(currentMessage, 5);
+      }
 
       // Start typewriter effect
       typewriterEffect(response.answer, () => {

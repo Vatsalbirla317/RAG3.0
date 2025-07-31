@@ -17,28 +17,44 @@ class AIService:
     
     def _initialize_clients(self):
         """Initialize AI clients based on available API keys"""
-        # Initialize Groq client
-        if settings.has_groq_key:
-            self.groq_client = groq.Groq(api_key=settings.GROQ_API_KEY)
-        
-        # Initialize Gemini client
-        if settings.has_gemini_keys:
-            genai.configure(api_key=settings.GEMINI_API_KEY_1 or settings.GEMINI_API_KEY_2)
-            self.gemini_model = genai.GenerativeModel('gemini-pro')
-        
-        # Initialize Gemini Embeddings
-        if settings.has_gemini_keys:
-            self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
-                model="models/text-embedding-004",
-                google_api_key=settings.google_api_key
-            )
-        
-        # Initialize Groq Chat for LangChain
-        if settings.has_groq_key:
-            self.groq_chat = ChatGroq(
-                api_key=settings.GROQ_API_KEY,
-                model="llama3-8b-8192"
-            )
+        try:
+            # Initialize Groq client
+            if settings.has_groq_key:
+                self.groq_client = groq.Groq(api_key=settings.GROQ_API_KEY)
+                print("✅ Groq client initialized successfully")
+            else:
+                print("⚠️ Groq API key not configured")
+            
+            # Initialize Gemini client
+            if settings.has_gemini_keys:
+                genai.configure(api_key=settings.GEMINI_API_KEY_1 or settings.GEMINI_API_KEY_2)
+                self.gemini_model = genai.GenerativeModel('gemini-pro')
+                print("✅ Gemini client initialized successfully")
+            else:
+                print("⚠️ Gemini API keys not configured")
+            
+            # Initialize Gemini Embeddings
+            if settings.has_gemini_keys:
+                self.gemini_embeddings = GoogleGenerativeAIEmbeddings(
+                    model="models/text-embedding-004",
+                    google_api_key=settings.google_api_key
+                )
+                print("✅ Gemini embeddings initialized successfully")
+            
+            # Initialize Groq Chat for LangChain
+            if settings.has_groq_key:
+                self.groq_chat = ChatGroq(
+                    api_key=settings.GROQ_API_KEY,
+                    model="llama3-8b-8192"
+                )
+                print("✅ Groq Chat initialized successfully")
+                
+            if not settings.has_any_ai_key:
+                print("❌ No AI API keys configured - some features may not work")
+                
+        except Exception as e:
+            print(f"❌ Error initializing AI clients: {e}")
+            # Continue with partial initialization
     
     async def chat_completion(
         self, 

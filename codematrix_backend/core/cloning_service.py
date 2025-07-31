@@ -266,8 +266,13 @@ async def collect_repository_metadata(repo_path: str, texts: list) -> dict:
                         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                             lines = f.readlines()
                             metadata["total_lines"] += len(lines)
-                    except:
-                        pass
+                    except (UnicodeDecodeError, PermissionError, FileNotFoundError) as e:
+                        # Skip files that can't be read (binary files, permission issues, etc.)
+                        print(f"⚠️ Could not read file {file_path}: {e}")
+                        continue
+                    except Exception as e:
+                        print(f"⚠️ Unexpected error reading file {file_path}: {e}")
+                        continue
         
         # Convert set to list for JSON serialization
         metadata["languages"] = list(metadata["languages"])

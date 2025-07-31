@@ -30,6 +30,31 @@ export const apiService = {
     return response.data;
   },
 
+  async cursorChat(question: string, topK: number = 5, currentFile?: string, cursorPosition?: number): Promise<ChatResponse> {
+    const response = await api.post('/chat/cursor', { 
+      question, 
+      top_k: topK,
+      current_file: currentFile,
+      cursor_position: cursorPosition
+    });
+    return response.data;
+  },
+
+  async suggestCodeImprovements(question: string, topK: number = 5): Promise<ChatResponse> {
+    const response = await api.post('/code/suggest', { question, top_k: topK });
+    return response.data;
+  },
+
+  async suggestRefactoring(question: string, topK: number = 5): Promise<ChatResponse> {
+    const response = await api.post('/code/refactor', { question, top_k: topK });
+    return response.data;
+  },
+
+  async explainCodeComplexity(question: string, topK: number = 5): Promise<ChatResponse> {
+    const response = await api.post('/code/explain', { question, top_k: topK });
+    return response.data;
+  },
+
   async cloneRepository(repoUrl: string): Promise<CloneResponse> {
     const response = await api.post('/clone', { repo_url: repoUrl });
     return response.data;
