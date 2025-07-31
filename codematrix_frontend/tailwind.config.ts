@@ -66,7 +66,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Matrix theme colors
+				'matrix-green': 'var(--matrix-green)',
+				'matrix-cyan': 'var(--matrix-cyan)',
+				'matrix-magenta': 'var(--matrix-magenta)',
+				'matrix-bg': 'var(--matrix-bg)',
+				'matrix-dark': 'var(--matrix-dark)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

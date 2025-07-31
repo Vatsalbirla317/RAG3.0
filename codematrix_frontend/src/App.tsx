@@ -40,16 +40,16 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-black text-red-400 flex items-center justify-center">
+        <div className="min-h-screen bg-background text-destructive flex items-center justify-center">
           <div className="text-center p-8">
             <h1 className="text-4xl font-bold mb-4">⚠️ Matrix Error</h1>
             <p className="text-lg mb-4">Something went wrong in the matrix</p>
-            <pre className="text-sm bg-gray-900 p-4 rounded text-left overflow-auto max-w-2xl">
+            <pre className="text-sm bg-muted p-4 rounded text-left overflow-auto max-w-2xl">
               {this.state.error?.toString()}
             </pre>
             <button 
               onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              className="mt-4 px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/80"
             >
               Reload Matrix
             </button>
@@ -101,7 +101,7 @@ function App() {
   // Show loading screen until client-side and ready
   if (!isClient || !isReady) {
     return (
-      <div className="min-h-screen bg-black text-green-400 flex items-center justify-center">
+      <div className="min-h-screen bg-background text-primary flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4 animate-pulse">⚡</div>
           <h1 className="text-4xl font-bold mb-2">CodeMatrix</h1>
@@ -117,7 +117,7 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-[#111111] text-[#00FF41] matrix-bg font-mono">
+        <div className={`min-h-screen bg-background text-foreground matrix-bg font-mono ${theme}`}>
           <Header theme={theme} onThemeToggle={toggleTheme} />
           
           {!repository ? (
@@ -125,21 +125,21 @@ function App() {
               {/* Central Branding Section */}
               <div className="flex flex-col items-center mb-12">
                 <div className="relative mb-6">
-                  <div className="p-6 bg-[#0a0a0a] border-2 border-[#00FFFF] rounded-lg shadow-[0_0_25px_rgba(0,255,255,0.4)]">
-                    <Terminal size={48} className="text-[#00FFFF] glow-cyan" />
+                  <div className="p-6 bg-card border-2 border-matrix-cyan rounded-lg shadow-[0_0_25px_rgba(0,255,255,0.4)]">
+                    <Terminal size={48} className="text-matrix-cyan glow-cyan" />
                   </div>
-                  <Zap size={24} className="absolute -top-2 -right-2 text-[#FF00FF] animate-pulse glow-magenta" />
+                  <Zap size={24} className="absolute -top-2 -right-2 text-matrix-magenta animate-pulse glow-magenta" />
                 </div>
-                <h1 className="text-7xl font-bold text-[#00FFFF] glow-text mb-4 tracking-wider">
+                <h1 className="text-7xl font-bold text-matrix-cyan glow-text mb-4 tracking-wider">
                   CodeMatrix
                 </h1>
-                <p className="text-2xl text-[#00FF41] glow-text mb-6 tracking-wide">
+                <p className="text-2xl text-matrix-green glow-text mb-6 tracking-wide">
                   Your Code's Digital Ghost
                 </p>
-                <div className="text-[#00FF41] font-mono text-lg flex items-center">
-                  <span className="text-[#00FFFF] mr-2">&gt;</span>
+                <div className="text-matrix-green font-mono text-lg flex items-center">
+                  <span className="text-matrix-cyan mr-2">&gt;</span>
                   <span>Enter the matrix of your codebase</span>
-                  <span className="animate-pulse ml-1 text-[#00FFFF]">|</span>
+                  <span className="animate-pulse ml-1 text-matrix-cyan">|</span>
                 </div>
               </div>
 
@@ -151,34 +151,34 @@ function App() {
           ) : (
             <main className="container mx-auto px-4 py-6">
               <Tabs defaultValue="chat" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 bg-[#111111]/90 border border-[#00FF41]/30">
+                <TabsList className="grid w-full grid-cols-5 bg-card/90 border border-matrix-green/30">
                   <TabsTrigger 
                     value="chat" 
-                    className="data-[state=active]:bg-[#00FFFF]/20 data-[state=active]:text-[#00FFFF] text-[#00FF41] font-mono hover:bg-[#00FF41]/10"
+                    className="data-[state=active]:bg-matrix-cyan/20 data-[state=active]:text-matrix-cyan text-matrix-green font-mono hover:bg-matrix-green/10"
                   >
                     Matrix Chat
                   </TabsTrigger>
                   <TabsTrigger 
                     value="security" 
-                    className="data-[state=active]:bg-[#FF00FF]/20 data-[state=active]:text-[#FF00FF] text-[#00FF41] font-mono hover:bg-[#FF00FF]/10"
+                    className="data-[state=active]:bg-matrix-magenta/20 data-[state=active]:text-matrix-magenta text-matrix-green font-mono hover:bg-matrix-magenta/10"
                   >
                     Security Scan
                   </TabsTrigger>
                   <TabsTrigger 
                     value="visualize" 
-                    className="data-[state=active]:bg-[#00FFFF]/20 data-[state=active]:text-[#00FFFF] text-[#00FF41] font-mono hover:bg-[#00FFFF]/10"
+                    className="data-[state=active]:bg-matrix-cyan/20 data-[state=active]:text-matrix-cyan text-matrix-green font-mono hover:bg-matrix-cyan/10"
                   >
                     Code Matrix
                   </TabsTrigger>
                   <TabsTrigger 
                     value="preview" 
-                    className="data-[state=active]:bg-[#00FF41]/20 data-[state=active]:text-[#00FF41] text-[#00FF41] font-mono hover:bg-[#00FF41]/10"
+                    className="data-[state=active]:bg-matrix-green/20 data-[state=active]:text-matrix-green text-matrix-green font-mono hover:bg-matrix-green/10"
                   >
                     Live Ghost
                   </TabsTrigger>
                   <TabsTrigger 
                     value="explain" 
-                    className="data-[state=active]:bg-[#00FFFF]/20 data-[state=active]:text-[#00FFFF] text-[#00FF41] font-mono hover:bg-[#00FFFF]/10"
+                    className="data-[state=active]:bg-matrix-cyan/20 data-[state=active]:text-matrix-cyan text-matrix-green font-mono hover:bg-matrix-cyan/10"
                   >
                     Code Oracle
                   </TabsTrigger>
@@ -263,9 +263,9 @@ function App() {
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#0a0a0a',
-                color: '#00FF41',
-                border: '1px solid #00FF41',
+                background: 'var(--matrix-dark)',
+                color: 'var(--matrix-green)',
+                border: '1px solid var(--matrix-green)',
                 fontFamily: 'Fira Code, monospace',
                 boxShadow: '0 0 20px rgba(0, 255, 65, 0.3)',
               },

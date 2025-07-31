@@ -31,31 +31,29 @@ async def clone_and_process_repo(repo_url):
         # Clear any existing in-memory vector store for this repo
         clear_vector_db(repo_name)
 
-        # --- 1. SMART CLONING / PULLING ---
+        # --- 1. FRESH CLONING (ALWAYS CLEAR OLD DATA) ---
         await update_state(status="cloning", message=f"Accessing repository {repo_name}...", progress=0.1, repo_name=repo_name)
 
-        # If the repo exists, pull the latest changes. Otherwise, clone it fresh.
+        # ALWAYS remove existing repository to ensure fresh data
         if os.path.exists(repo_path):
             try:
-                print(f"Repository {repo_name} already exists. Pulling latest changes.")
-                repo = git.Repo(repo_path)
-                origin = repo.remotes.origin
-                origin.pull()
-            except Exception as e:
-                print(f"Error pulling repo, attempting to re-clone. Error: {e}")
+                print(f"Removing existing repository {repo_name} for fresh clone...")
+                shutil.rmtree(repo_path)
+            except PermissionError:
+                print(f"Permission denied when trying to delete {repo_path}. This is normal on Windows.")
+                # On Windows, we might not be able to delete immediately due to file locks
+                # Give the system a moment to release file handles
+                time.sleep(1)
+                # Try again
                 try:
-                    shutil.rmtree(repo_path) # Delete corrupted repo
-                except PermissionError:
-                    print(f"Permission denied when trying to delete {repo_path}. This is normal on Windows.")
-                    # On Windows, we might not be able to delete immediately due to file locks
-                    # Give the system a moment to release file handles
-                    time.sleep(1)
-                    # The next clone attempt will overwrite the directory anyway
-                git.Repo.clone_from(repo_url, repo_path)
-        else:
-            print(f"Cloning new repository: {repo_url} into {repo_path}")
-            os.makedirs(REPO_DIR, exist_ok=True)
-            git.Repo.clone_from(repo_url, repo_path)
+                    shutil.rmtree(repo_path)
+                except:
+                    print(f"Could not remove {repo_path}, will overwrite during clone")
+
+        # Always do a fresh clone
+        print(f"Cloning repository: {repo_url} into {repo_path}")
+        os.makedirs(REPO_DIR, exist_ok=True)
+        git.Repo.clone_from(repo_url, repo_path)
 
         # --- 2. INDEXING (LOADING & SPLITTING) ---
         await update_state(status="indexing", message="Parsing code files...", progress=0.4)

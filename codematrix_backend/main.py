@@ -13,7 +13,7 @@ from core.config import settings
 from core.ai_service import ai_service
 from core.state_manager import get_state, update_state, reset_state, app_state
 from core.cloning_service import clone_and_process_repo
-from core.rag_service import query_codebase, get_vector_db
+from core.rag_service import query_codebase, get_vector_db, clear_all_vector_dbs, get_vector_store_info
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +34,8 @@ def rehydrate_state_on_startup():
         "repo_name": "",
         "is_processing": False
     })
+    # Clear all vector stores on startup
+    clear_all_vector_dbs()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -96,6 +98,10 @@ async def clone_repository(request: CloneRequest, background_tasks: BackgroundTa
         if current_state.get("is_processing", False):
             raise HTTPException(status_code=409, detail="Another repository is currently being processed. Please wait.")
 
+        # Clear ALL vector stores before processing new repository
+        print("Clearing all vector stores before processing new repository...")
+        clear_all_vector_dbs()
+
         # Start the background task
         background_tasks.add_task(clone_and_process_repo, request.repo_url)
         
@@ -128,6 +134,7 @@ async def reset_application_state():
     Resets the application state (for debugging).
     """
     await reset_state()
+    clear_all_vector_dbs()
     return {"message": "Application state reset successfully"}
 
 @app.get("/debug/state")
@@ -136,10 +143,19 @@ async def debug_state():
     Returns the full application state for debugging.
     """
     state = await get_state()
+    vector_info = get_vector_store_info()
     return {
         **state,
+        "vector_stores": vector_info,
         "vector_db_exists": get_vector_db(state.get('repo_name', '')) is not None if state.get("repo_name") else False
     }
+
+@app.get("/debug/vector-stores")
+async def debug_vector_stores():
+    """
+    Returns information about current vector stores in memory.
+    """
+    return get_vector_store_info()
 
 @app.get("/repo_info", response_model=RepoInfoResponse)
 async def get_repo_info():

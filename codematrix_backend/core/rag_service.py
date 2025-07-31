@@ -26,6 +26,10 @@ async def query_codebase(question: str, top_k: int = 5):
         if not repo_name:
             return {"answer": "No repository is currently loaded. Please clone a repository first.", "retrieved_code": []}
 
+        # Debug: Print what's in memory
+        print(f"Current vector stores in memory: {list(VECTOR_STORES.keys())}")
+        print(f"Looking for repository: {repo_name}")
+
         # Check if vector store exists in memory
         if repo_name not in VECTOR_STORES:
             return {"answer": "Vector database for this repository not found. Please re-index.", "retrieved_code": []}
@@ -73,7 +77,9 @@ async def query_codebase(question: str, top_k: int = 5):
 
 def store_vector_db(repo_name: str, vectorstore):
     """Store vector database in memory"""
+    print(f"Storing vector database for repository: {repo_name}")
     VECTOR_STORES[repo_name] = vectorstore
+    print(f"Current vector stores: {list(VECTOR_STORES.keys())}")
 
 def get_vector_db(repo_name: str):
     """Get vector database from memory"""
@@ -82,4 +88,19 @@ def get_vector_db(repo_name: str):
 def clear_vector_db(repo_name: str):
     """Clear vector database from memory"""
     if repo_name in VECTOR_STORES:
-        del VECTOR_STORES[repo_name] 
+        print(f"Clearing vector database for repository: {repo_name}")
+        del VECTOR_STORES[repo_name]
+        print(f"Current vector stores after clearing: {list(VECTOR_STORES.keys())}")
+
+def clear_all_vector_dbs():
+    """Clear all vector databases from memory"""
+    print(f"Clearing all vector databases. Previous stores: {list(VECTOR_STORES.keys())}")
+    VECTOR_STORES.clear()
+    print("All vector databases cleared")
+
+def get_vector_store_info():
+    """Get information about current vector stores"""
+    return {
+        "stores": list(VECTOR_STORES.keys()),
+        "count": len(VECTOR_STORES)
+    } 
