@@ -38,18 +38,24 @@ async def query_codebase(question: str, top_k: int = 5):
         vectorstore = VECTOR_STORES[repo_name]
         retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
 
-        # 2. Define the RAG prompt template
+        # 2. Define the RAG prompt template with smarter context handling
         template = """
-        You are a senior software engineer and an expert in the codebase provided.
-        Answer the user's question based only on the following context.
-        If the answer is not in the context, say you don't know.
-        Be concise and provide code snippets from the context if they are relevant.
+        You are a senior software engineer and an expert in the codebase provided. You have access to the repository: {repo_name}
+
+        Answer the user's question based only on the following context. If the answer is not in the context, say you don't know.
+        
+        IMPORTANT GUIDELINES:
+        1. Be concise and direct unless the user asks for detailed information
+        2. For file structure questions, provide a clear overview of file types and organization
+        3. For code questions, provide relevant code snippets from the context
+        4. If asked about repository structure, file types, or organization, analyze the context to provide a comprehensive overview
+        5. Use your knowledge to infer file types and structure from the file paths and content in the context
+        6. Don't list every single file unless specifically asked - provide summaries and patterns instead
 
         Context:
         {context}
 
-        Question:
-        {question}
+        Question: {question}
 
         Answer:
         """
@@ -57,7 +63,11 @@ async def query_codebase(question: str, top_k: int = 5):
 
         # 3. Create the RAG chain using LangChain Expression Language (LCEL)
         rag_chain = (
-            {"context": retriever | format_docs, "question": RunnablePassthrough()}
+            {
+                "context": retriever | format_docs, 
+                "question": RunnablePassthrough(),
+                "repo_name": lambda x: repo_name
+            }
             | prompt
             | groq_chat
             | StrOutputParser()

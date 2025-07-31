@@ -142,7 +142,7 @@ async def clone_and_process_repo(repo_url):
         if not os.path.exists(abs_repo_path):
             raise ValueError(f"Repository directory does not exist: {abs_repo_path}")
         
-        # List ALL files in the repository for debugging
+        # List ALL files in the repository for debugging (but don't print all)
         all_files = []
         for root, dirs, filenames in os.walk(abs_repo_path):
             for filename in filenames:
@@ -150,7 +150,11 @@ async def clone_and_process_repo(repo_url):
                 all_files.append(file_path)
         
         print(f"TOTAL files found in repository: {len(all_files)}")
-        print(f"ALL files: {all_files}")
+        # Only show first few files to avoid spam
+        if len(all_files) <= 10:
+            print(f"Files: {all_files}")
+        else:
+            print(f"Files: {all_files[:5]}... and {len(all_files)-5} more")
         
         # List some files to verify we're in the right place
         files = []
@@ -178,10 +182,9 @@ async def clone_and_process_repo(repo_url):
 
         print(f"Loaded {len(documents)} documents from repository")
         
-        # Debug: Show some document sources
-        for i, doc in enumerate(documents[:5]):
+        # Debug: Show some document sources (but not content previews to reduce spam)
+        for i, doc in enumerate(documents[:3]):
             print(f"Document {i}: {doc.metadata.get('source', 'unknown')}")
-            print(f"  Content preview: {doc.page_content[:200]}...")
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.PYTHON, chunk_size=2000, chunk_overlap=200)
         js_splitter = RecursiveCharacterTextSplitter.from_language(language=Language.JS, chunk_size=2000, chunk_overlap=200)
