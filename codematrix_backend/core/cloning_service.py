@@ -4,6 +4,7 @@ import git
 import shutil
 import time
 import tempfile
+import asyncio
 from urllib.parse import urlparse
 
 from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
@@ -38,6 +39,7 @@ async def clone_and_process_repo(repo_url):
 
         # Create the repositories directory
         os.makedirs(REPO_DIR, exist_ok=True)
+        print(f"Created repository directory: {REPO_DIR}")
         
         # ALWAYS remove existing repository to ensure fresh data
         if os.path.exists(repo_path):
@@ -50,44 +52,84 @@ async def clone_and_process_repo(repo_url):
                 repo_path = os.path.join(REPO_DIR, f"{repo_name}_{int(time.time())}")
                 print(f"Using alternative path: {repo_path}")
 
-        # Try different cloning approaches
+        # Try different cloning approaches with timeout
         clone_success = False
+        clone_error = None
         
-        # Method 1: Standard clone
+        # Method 1: Standard clone with timeout
         try:
             print(f"Attempting standard clone: {repo_url} into {repo_path}")
-            git.Repo.clone_from(repo_url, repo_path, depth=1)  # Shallow clone for speed
-            clone_success = True
+            
+            # Run git clone with timeout
+            def clone_repo():
+                return git.Repo.clone_from(repo_url, repo_path, depth=1)
+            
+            # Use asyncio to add timeout
+            try:
+                loop = asyncio.get_event_loop()
+                await asyncio.wait_for(loop.run_in_executor(None, clone_repo), timeout=60.0)
+                clone_success = True
+                print("Standard clone successful!")
+            except asyncio.TimeoutError:
+                print("Standard clone timed out after 60 seconds")
+                clone_error = "Clone timed out"
+                
         except Exception as e:
             print(f"Standard clone failed: {e}")
+            clone_error = str(e)
             
             # Method 2: Try with different options
-            try:
-                print(f"Attempting clone with different options...")
-                git.Repo.clone_from(
-                    repo_url, 
-                    repo_path, 
-                    depth=1,
-                    single_branch=True,
-                    no_checkout=False
-                )
-                clone_success = True
-            except Exception as e2:
-                print(f"Alternative clone also failed: {e2}")
-                
-                # Method 3: Try in a completely different location
+            if not clone_success:
                 try:
-                    alt_path = os.path.join(tempfile.gettempdir(), f"repo_{int(time.time())}")
-                    print(f"Trying alternative location: {alt_path}")
-                    git.Repo.clone_from(repo_url, alt_path, depth=1)
-                    repo_path = alt_path
-                    clone_success = True
-                except Exception as e3:
-                    print(f"All cloning methods failed: {e3}")
-                    raise Exception(f"Failed to clone repository after multiple attempts: {e3}")
+                    print(f"Attempting clone with different options...")
+                    
+                    def clone_repo_alt():
+                        return git.Repo.clone_from(
+                            repo_url, 
+                            repo_path, 
+                            depth=1,
+                            single_branch=True,
+                            no_checkout=False
+                        )
+                    
+                    try:
+                        await asyncio.wait_for(loop.run_in_executor(None, clone_repo_alt), timeout=60.0)
+                        clone_success = True
+                        print("Alternative clone successful!")
+                    except asyncio.TimeoutError:
+                        print("Alternative clone timed out after 60 seconds")
+                        clone_error = "Alternative clone timed out"
+                        
+                except Exception as e2:
+                    print(f"Alternative clone also failed: {e2}")
+                    clone_error = str(e2)
+                    
+                    # Method 3: Try in a completely different location
+                    if not clone_success:
+                        try:
+                            alt_path = os.path.join(tempfile.gettempdir(), f"repo_{int(time.time())}")
+                            print(f"Trying alternative location: {alt_path}")
+                            
+                            def clone_repo_alt2():
+                                return git.Repo.clone_from(repo_url, alt_path, depth=1)
+                            
+                            try:
+                                await asyncio.wait_for(loop.run_in_executor(None, clone_repo_alt2), timeout=60.0)
+                                repo_path = alt_path
+                                clone_success = True
+                                print("Alternative location clone successful!")
+                            except asyncio.TimeoutError:
+                                print("Alternative location clone timed out")
+                                clone_error = "All cloning methods timed out"
+                                
+                        except Exception as e3:
+                            print(f"All cloning methods failed: {e3}")
+                            clone_error = str(e3)
 
         if not clone_success:
-            raise Exception("All cloning methods failed")
+            error_msg = f"Failed to clone repository after multiple attempts: {clone_error}"
+            print(error_msg)
+            raise Exception(error_msg)
 
         # --- 2. INDEXING (LOADING & SPLITTING) ---
         await update_state(status="indexing", message="Parsing code files...", progress=0.4)
