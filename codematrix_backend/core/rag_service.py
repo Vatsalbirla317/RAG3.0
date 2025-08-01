@@ -29,9 +29,20 @@ async def query_codebase(question: str, top_k: int = 5, current_file: str = None
         print(f"🔍 DEBUG: Full state: {current_state}")
         print(f"🔍 DEBUG: Vector stores available: {list(VECTOR_STORES.keys())}")
 
-        if not repo_name:
-            print(f"❌ DEBUG: No repository name in state")
+        # Check if we have any vector stores available
+        if not VECTOR_STORES:
+            print(f"❌ DEBUG: No vector stores available")
             return {"answer": "No repository is currently loaded. Please clone a repository first.", "retrieved_code": []}
+
+        # If no repo_name in state, use the first available vector store
+        if not repo_name:
+            available_stores = list(VECTOR_STORES.keys())
+            if available_stores:
+                repo_name = available_stores[0]
+                print(f"✅ DEBUG: Using first available vector store: {repo_name}")
+            else:
+                print(f"❌ DEBUG: No repository name in state and no vector stores")
+                return {"answer": "No repository is currently loaded. Please clone a repository first.", "retrieved_code": []}
 
         # Debug: Print what's in memory
         print(f"Current vector stores in memory: {list(VECTOR_STORES.keys())}")
