@@ -34,8 +34,8 @@ def rehydrate_state_on_startup():
         "repo_name": "",
         "is_processing": False
     })
-    # Clear all vector stores on startup
-    clear_all_vector_dbs()
+    # Don't clear vector stores on startup - let them persist
+    # clear_all_vector_dbs()  # REMOVED: This was causing the issue!
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
