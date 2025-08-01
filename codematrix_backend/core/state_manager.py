@@ -1,5 +1,6 @@
 import asyncio
 import os
+import json
 from typing import Optional
 
 # A simple in-memory dictionary to hold the application's state.
@@ -19,11 +20,35 @@ app_state = {
 # A lock to prevent race conditions when updating the state from different requests.
 state_lock = asyncio.Lock()
 
+# File path for persistent state storage
+STATE_FILE = "/tmp/codematrix_state.json"
+
 def _get_repo_name_from_path(repo_path: Optional[str]) -> Optional[str]:
     """Extract repository name from path if available"""
     if repo_path and os.path.exists(repo_path):
         return os.path.basename(repo_path)
     return None
+
+def _load_persistent_state():
+    """Load state from persistent storage if available"""
+    try:
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, 'r') as f:
+                saved_state = json.load(f)
+                app_state.update(saved_state)
+                print(f"✅ Loaded persistent state: {saved_state.get('repo_name', 'None')}")
+                return True
+    except Exception as e:
+        print(f"⚠️ Could not load persistent state: {e}")
+    return False
+
+def _save_persistent_state():
+    """Save current state to persistent storage"""
+    try:
+        with open(STATE_FILE, 'w') as f:
+            json.dump(app_state, f)
+    except Exception as e:
+        print(f"⚠️ Could not save persistent state: {e}")
 
 async def update_state(status=None, message=None, progress=None, repo_path=None, repo_name=None, repo_metadata=None, is_processing=None):
     async with state_lock:
@@ -49,6 +74,9 @@ async def update_state(status=None, message=None, progress=None, repo_path=None,
         import datetime
         app_state["last_updated"] = datetime.datetime.now().isoformat()
         
+        # Save to persistent storage
+        _save_persistent_state()
+        
         print(f"State updated: {app_state}")
 
 async def get_state():
@@ -69,4 +97,13 @@ async def reset_state():
             "is_processing": False,
             "last_updated": None
         })
-        print("State reset to initial values") 
+        # Clear persistent storage
+        try:
+            if os.path.exists(STATE_FILE):
+                os.remove(STATE_FILE)
+        except Exception as e:
+            print(f"⚠️ Could not remove persistent state: {e}")
+        print("State reset to initial values")
+
+# Load persistent state on module import
+_load_persistent_state() 
