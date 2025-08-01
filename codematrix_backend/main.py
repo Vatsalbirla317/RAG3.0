@@ -169,6 +169,22 @@ async def check_repository_status():
         "message": "Repository check completed"
     }
 
+@app.get("/debug/simple")
+async def simple_debug():
+    """
+    Simple debug endpoint to check basic state and vector stores.
+    """
+    state = await get_state()
+    vector_stores = get_vector_store_info()
+    
+    return {
+        "state_repo_name": state.get("repo_name"),
+        "state_status": state.get("status"),
+        "vector_stores": list(vector_stores.get("stores", [])),
+        "vector_count": vector_stores.get("count", 0),
+        "timestamp": datetime.now().isoformat()
+    }
+
 @app.get("/debug/vector-stores")
 async def debug_vector_stores():
     """

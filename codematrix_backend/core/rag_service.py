@@ -24,7 +24,13 @@ async def query_codebase(question: str, top_k: int = 5, current_file: str = None
         repo_name = current_state.get("repo_name")
         repo_path = current_state.get("repo_path")
 
+        # Enhanced debugging
+        print(f"🔍 DEBUG: Current state - repo_name: '{repo_name}', repo_path: '{repo_path}'")
+        print(f"🔍 DEBUG: Full state: {current_state}")
+        print(f"🔍 DEBUG: Vector stores available: {list(VECTOR_STORES.keys())}")
+
         if not repo_name:
+            print(f"❌ DEBUG: No repository name in state")
             return {"answer": "No repository is currently loaded. Please clone a repository first.", "retrieved_code": []}
 
         # Debug: Print what's in memory
@@ -35,16 +41,21 @@ async def query_codebase(question: str, top_k: int = 5, current_file: str = None
         vectorstore = None
         if repo_name in VECTOR_STORES:
             vectorstore = VECTOR_STORES[repo_name]
+            print(f"✅ DEBUG: Found exact match for repository: {repo_name}")
         else:
             # Try to find a partial match (in case repo name has timestamp suffix)
             for store_name in VECTOR_STORES.keys():
                 if repo_name in store_name or store_name in repo_name:
                     vectorstore = VECTOR_STORES[store_name]
-                    print(f"Found partial match: {store_name} for {repo_name}")
+                    print(f"✅ DEBUG: Found partial match: {store_name} for {repo_name}")
                     break
         
         if not vectorstore:
+            print(f"❌ DEBUG: No vector store found for repository: {repo_name}")
+            print(f"❌ DEBUG: Available stores: {list(VECTOR_STORES.keys())}")
             return {"answer": f"No repository index found for '{repo_name}'. Please clone a repository first.", "retrieved_code": []}
+
+        print(f"✅ DEBUG: Successfully found vector store for: {repo_name}")
 
         # Vector store already retrieved above
         
@@ -164,7 +175,8 @@ FOCUS CONTEXT:
 
         return {"answer": answer, "retrieved_code": retrieved_code}
     except Exception as e:
-        print(f"Error in RAG query: {e}")
+        print(f"❌ ERROR in RAG query: {e}")
+        print(f"❌ ERROR details: {type(e).__name__}: {str(e)}")
         return {"answer": f"An error occurred while processing your question: {str(e)}", "retrieved_code": []}
 
 def store_vector_db(repo_name: str, vectorstore):
