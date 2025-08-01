@@ -98,9 +98,14 @@ async def clone_repository(request: CloneRequest, background_tasks: BackgroundTa
         if current_state.get("is_processing", False):
             raise HTTPException(status_code=409, detail="Another repository is currently being processed. Please wait.")
 
-        # Clear ALL vector stores before processing new repository
-        print("Clearing all vector stores before processing new repository...")
-        clear_all_vector_dbs()
+        # Extract repo name from URL to clear only that specific repository
+        from urllib.parse import urlparse
+        repo_name = os.path.basename(urlparse(str(request.repo_url)).path).replace('.git', '')
+        
+        # Clear only the specific repository being cloned, not all vector stores
+        print(f"Clearing vector store for repository: {repo_name}")
+        from core.rag_service import clear_vector_db
+        clear_vector_db(repo_name)
 
         # Start the background task
         background_tasks.add_task(clone_and_process_repo, request.repo_url)
